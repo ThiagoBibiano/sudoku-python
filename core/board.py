@@ -1,75 +1,70 @@
 """Representação de tabuleiro (Board).
 
-Responsabilidades:
-- Armazenar a grade (estado das células).
-- Oferecer operações seguras de leitura/escrita (nesta etapa: assinaturas).
-- Não validar regras (separação via SudokuRules).
+Responsabilidades (nesta sub-etapa 2.1):
+- Armazenar a grade recebida no construtor.
+- Expor o tamanho lógico da grade via `size()`.
 
-Nesta etapa, mantenha apenas a interface (sem lógica).
+Não há validação de regras ou candidatos nesta etapa.
+Validações mais completas e operações de leitura/escrita virão nas próximas sub-etapas.
+
+Docstrings no formato Google Style, PEP8 e foco em OOP/SOLID.
 """
 
 from __future__ import annotations
-from typing import Optional
-from .types import Grid, Digit, Coord, Size
+from typing import Sequence
+from .types import Grid, Digit, Size, DEFAULT_N
 
 
 class Board:
     """Contêiner de estado de um tabuleiro de Sudoku.
 
-    Neste estágio, apenas defina a interface pública. A implementação
-    virá em etapas seguintes.
+    Nesta sub-etapa, a classe mantém apenas o estado e o tamanho,
+    sem implementar validações ou operações de leitura/escrita além
+    da consulta do tamanho.
 
     Attributes:
-        _grid (Grid): Grade 2D do tabuleiro.
-        _n (Size): Parâmetro N (3 para 9x9).
+        _grid (list[list[int]]): Grade 2D interna do tabuleiro.
+        _n (int): Parâmetro N (3 para 9x9, 4 para 16x16, etc.).
+        _size (int): Dimensão total da grade (N*N).
     """
 
-    def __init__(self, grid: Grid, n: Size = 3) -> None:
-        """Inicializa o tabuleiro.
+    def __init__(self, grid: Grid, n: Size = DEFAULT_N) -> None:
+        """Inicializa o tabuleiro com uma grade e parâmetro N.
+
+        Realiza apenas cópia defensiva superficial da grade nesta etapa,
+        sem validações profundas de dimensão ou faixa de dígitos.
+        Validações completas serão adicionadas nas próximas sub-etapas.
 
         Args:
             grid: Grade inicial; use 0 para células vazias.
             n: Parâmetro N; N=3 => 9x9.
+
+        Raises:
+            ValueError: Se `n` for menor que 1.
         """
-        raise NotImplementedError
+        if n < 1:
+            raise ValueError("Parameter `n` must be >= 1.")
+        self._n: int = int(n)
+        self._size: int = self._n * self._n
+
+        # Cópia defensiva superficial (linhas novas; elementos mantidos).
+        # Validações de shape e faixa de valores virão depois.
+        self._grid: list[list[int]] = [list(row) for row in grid]
 
     def size(self) -> int:
-        """Retorna o tamanho total da grade (N*N).
+        """Retorna a dimensão da grade (N*N).
 
         Returns:
-            Tamanho da dimensão da grade (ex.: 9).
+            int: Dimensão da grade (ex.: 9 para N=3).
         """
-        raise NotImplementedError
+        return self._size
 
-    def get(self, r: int, c: int) -> Digit:
-        """Obtém o valor na célula (r, c).
-
-        Args:
-            r: Índice da linha (0-index).
-            c: Índice da coluna (0-index).
-
-        Returns:
-            Dígito na célula; 0 indica vazio.
-        """
-        raise NotImplementedError
-
-    def set(self, r: int, c: int, v: Digit) -> None:
-        """Define o valor na célula (r, c).
-
-        Atenção: a validação de regras NÃO é responsabilidade do Board.
-
-        Args:
-            r: Índice da linha.
-            c: Índice da coluna.
-            v: Dígito (0 para vazio).
-        """
-        raise NotImplementedError
-
-    def clone(self) -> "Board":
-        """Retorna uma cópia do tabuleiro.
-
-        Returns:
-            Nova instância de Board com a mesma grade.
-        """
-        raise NotImplementedError
+    # Os métodos abaixo serão implementados nas próximas sub-etapas:
+    # - get(self, r: int, c: int) -> Digit
+    # - set(self, r: int, c: int, v: Digit) -> None
+    # - with_value(self, r: int, c: int, v: Digit) -> "Board"
+    # - clone(self) -> "Board"
+    # - to_grid(self) -> Grid
+    # - is_full(self) -> bool
+    # - __repr__/__str__
 
