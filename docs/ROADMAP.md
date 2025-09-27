@@ -2,8 +2,8 @@
 
 ## Etapas
 - [x] Etapa 0 — Base do repositório
-- [ ] Etapa 1 — Estrutura de pastas + contratos (sem lógica ainda)
-- [ ] Etapa 2 — Core mínimo: tipos e Board
+- [x] Etapa 1 — Estrutura de pastas + contratos (sem lógica ainda)
+- [x] Etapa 2 — Core mínimo: tipos e Board
 - [ ] Etapa 3 — Validador de regras
 - [ ] Etapa 4 — IO simples
 - [ ] Etapa 5 — Streamlit MVP (esqueleto multipáginas)
