@@ -1,31 +1,36 @@
 """Rotinas de entrada/saída (IO) e parsing de puzzles de Sudoku.
 
 Responsabilidade:
-    Este módulo lida exclusivamente com conversões entre representações
-    textuais (TXT/CSV/JSON/NDJSON) e o modelo interno (`Board`). Ele não
-    aplica regras do Sudoku (essas ficam em `SudokuRules`) e não gerencia
-    candidatos/propagação.
+    Converter representações textuais (TXT/JSON/NDJSON) para o modelo interno
+    (`Board`) e vice-versa. Este módulo NÃO aplica regras do Sudoku
+    (isso é papel de `SudokuRules`) e NÃO gerencia candidatos/propagação.
 
 Formatos unitários (um tabuleiro):
-    - TXT (compacto): string contínua com size^2 caracteres ("0" ou "." para vazio).
-    - TXT (grid): linhas formatadas (ex.: 9 linhas de 9 colunas), "." para vazio.
-    - JSON (objeto): {"grid": [[...]], "n": 3?} (n opcional; será inferido se ausente).
+    - TXT (compacto): string contínua com size^2 caracteres; aceita '0' e/ou '.'
+      como vazio (ex.: 81 caracteres no 9×9).
+    - TXT (grid): múltiplas linhas (ex.: 9 linhas com 9 valores). No modo flex,
+      espaços e separadores visuais podem ser ignorados; '.' representa vazio.
+    - JSON (objeto): {"grid": [[...], ...], "n": 3?}
+      * 'n' é opcional; se ausente, é inferido a partir do tamanho do grid.
 
 Formato em lote (múltiplos tabuleiros):
-    - NDJSON (um JSON por linha), **um arquivo por dificuldade** (ex.: easy.ndjson):
-        {"id": "easy-0001", "puzzle": "3.6......85.9.3........1.6..........6.3..8....173.4..9.......3.4....6...5..81..9."}
-      Regras NDJSON (9x9):
-        * 81 caracteres exatos
-        * Apenas '1'..'9' e '.' (ponto) como vazio
-        * `id` obrigatório (string) e **único dentro do arquivo**
-        * Linhas vazias ignoradas; comentários não permitidos
-        * Codificação UTF-8, sem BOM
+    - NDJSON (um JSON por linha), **um arquivo por dificuldade** (ex.: easy.ndjson).
+      Esquema por linha:
+          {"id": "<string única>", "puzzle": "<81 chars 1-9|.>", "n": 3?}
+      Regras (para 9×9):
+          * 'puzzle' com 81 caracteres, apenas '1'..'9' e '.' (ponto = vazio)
+          * 'id' obrigatório (string) e **único dentro do arquivo**
+          * 'n' opcional; se ausente, assume-se 3 (9×9)
+          * Linhas vazias são ignoradas; comentários não são permitidos
+          * Codificação UTF-8, sem BOM
 
 Decisões:
-    - Para formatos "unitários", suportamos `0` e/ou '.' como vazio.
-    - Para NDJSON (lote), seguimos estritamente a especificação: **apenas '.'**
-      representa vazio e apenas 9x9 (81 chars).
+    - Nos formatos unitários, suportamos '0' e '.' como vazio.
+    - No NDJSON, usamos **apenas '.'** como vazio por especificação do lote.
+    - A implementação atual do NDJSON suporta 9×9 (n=3). O campo 'n' já existe
+      para futura generalização; linhas com n≠3 são rejeitadas por enquanto.
 """
+
 
 from __future__ import annotations
 
@@ -297,10 +302,23 @@ def parse_json(puzzle_json: str) -> Board:
         g2.append(row2)
 
     n = obj.get("n", None)
-    if n is not None and (not isinstance(n, int) or n < 1):
-        raise ValueError(f"Valor inválido para 'n': {n}")
+    if n is not None:
+        if not isinstance(n, int) or n < 1:
+            raise ValueError(f"Valor inválido para 'n': {n}")
+        inferido = n
+    else:
+        # Inferir n a partir do grid: grid deve ser size x size e size = n^2
+        size = len(g2)
+        if size == 0 or any(len(r) != size for r in g2):
+            raise ValueError("Grid JSON precisa ser quadrado (size x size).")
+        # size deve ser quadrado perfeito (size = n^2)
+        root = int(size ** 0.5)
+        if root * root != size:
+            raise ValueError(f"Dimensão do grid ({size}) não é um quadrado perfeito (n^2).")
+        inferido = root  # pois size = n^2
 
-    return Board(g2, n=(n or DEFAULT_N))
+    return Board(g2, n=inferido)
+
 
 
 def to_json(board: Board, *, include_n: bool = True, pretty: bool = True) -> str:
@@ -350,7 +368,6 @@ def parse_ndjson(ndjson_text: str) -> List[PuzzleEntry]:
     for lineno, raw in enumerate(_strip_bom(ndjson_text).splitlines(), start=1):
         line = raw.strip()
         if not line:
-            # Linha vazia: ignorar
             continue
         try:
             obj = json.loads(line)
@@ -365,6 +382,7 @@ def parse_ndjson(ndjson_text: str) -> List[PuzzleEntry]:
 
         pid = obj["id"]
         puzzle = obj["puzzle"]
+        n = obj.get("n", 3)
 
         if not isinstance(pid, str) or not pid:
             raise ValueError(f"Linha {lineno}: 'id' deve ser string não-vazia.")
@@ -372,30 +390,36 @@ def parse_ndjson(ndjson_text: str) -> List[PuzzleEntry]:
             raise ValueError(f"Linha {lineno}: 'id' duplicado no arquivo: {pid}")
         seen_ids.add(pid)
 
+        if not isinstance(n, int) or n < 1:
+            raise ValueError(f"Linha {lineno}: 'n' inválido (esperado inteiro >=1).")
+
+        # Por ora, suportamos apenas 9x9 (n=3) neste NDJSON.
+        if n != 3:
+            raise ValueError(f"Linha {lineno}: NDJSON atualmente suporta apenas n=3 (9x9). Recebido n={n}.")
+
         if not isinstance(puzzle, str):
             raise ValueError(f"Linha {lineno}: 'puzzle' deve ser string.")
-        if not _ALLOWED_DOT_LINE_RE.match(puzzle):
+        if len(puzzle) != 81 or not re.fullmatch(r"[1-9\.]{81}", puzzle):
             raise ValueError(
                 f"Linha {lineno}: 'puzzle' deve ter 81 caracteres com apenas '1'..'9' e '.'."
             )
 
-        # Converter '.' → 0 e montar Board 9x9 (N=3).
-        grid, n = _grid_from_linear(
+        grid, inferred_n = _grid_from_linear(
             puzzle,
             empty_char="0",
             allow_dot_as_empty=True,
             strict_internal_spaces=True,
         )
-        # Em NDJSON, especificação é 9x9; garantir N=3:
-        if n != 3:
+        if inferred_n != n:
             raise ValueError(
-                f"Linha {lineno}: NDJSON é restrito a 9x9 (N=3). Encontrado N={n}."
+                f"Linha {lineno}: inconsistência entre 'n' ({n}) e puzzle ({inferred_n})."
             )
 
-        board = Board(grid, n=3)
+        board = Board(grid, n=n)
         entries.append(PuzzleEntry(id=pid, board=board))
 
     return entries
+
 
 
 def load_ndjson(path: str | Path) -> List[PuzzleEntry]:
@@ -443,11 +467,11 @@ def save_ndjson(path: str | Path, entries: Sequence[PuzzleEntry]) -> None:
         # Garantir 9x9 (N=3)
         size = e.board.size()
         if size != 9:
-            raise ValueError(f"Apenas 9x9 é suportado para NDJSON (encontrado {size}x{size}).")
+            raise ValueError("Apenas 9x9 é suportado para NDJSON (encontrado {size}x{size}).")
         puzzle = to_txt_compact(e.board, empty_char=_DOT)
         if len(puzzle) != 81 or not _ALLOWED_DOT_LINE_RE.match(puzzle):
             raise ValueError(f"Tabuleiro inválido ao serializar NDJSON para id={e.id}.")
-        obj = {"id": e.id, "puzzle": puzzle}
+        obj = {"id": e.id, "n": 3, "puzzle": puzzle}
         lines.append(json.dumps(obj, ensure_ascii=False, separators=(",", ":")))
 
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -549,4 +573,3 @@ def to_txt_grid(board: Board, *, empty_char: str = ".") -> str:
         return " ".join(str(v) if v != EMPTY else empty_char for v in row)
 
     return "\n".join(fmt_row(row) for row in g)
-
