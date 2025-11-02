@@ -16,7 +16,7 @@ Decisões de design principais:
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, Optional
 
 from .types import Grid, Digit, Size, DEFAULT_N, EMPTY
 
@@ -45,7 +45,13 @@ class Board:
     # Construção e informações básicas
     # --------------------------------------------------------------------- #
 
-    def __init__(self, grid: Grid, n: Size = DEFAULT_N) -> None:
+    def __init__(
+        self,
+        grid: Grid,
+        n: Size = DEFAULT_N,
+        *,
+        _given_mask: Optional[Sequence[Sequence[bool]]] = None
+    ) -> None:
         """Inicializa o tabuleiro com uma grade e parâmetro N.
 
         Cria cópias internas para evitar aliasing de listas externas e
@@ -75,10 +81,17 @@ class Board:
         self._validate_shape(self._grid)
         self._validate_values(self._grid)
 
-        # Máscara de pistas iniciais (células != EMPTY).
-        self._given: list[list[bool]] = [
-            [cell != EMPTY for cell in row] for row in self._grid
-        ]
+        if _given_mask is not None:
+            # Se uma máscara foi fornecida, use-a
+            self._given = [list(row) for row in _given_mask]
+            # Validação extra opcional (boa prática)
+            if len(self._given) != self._size or any(len(r) != self._size for r in self._given):
+                raise ValueError("Provided _given_mask has incorrect dimensions.")
+        else:
+            # Comportamento original: inferir do grid (para carregar puzzles)
+            self._given: list[list[bool]] = [
+                [cell != EMPTY for cell in row] for row in self._grid
+            ]
 
     # --------------------------------------------------------------------- #
     # Leitura, escrita e utilitários
@@ -167,7 +180,7 @@ class Board:
         # Como o construtor marca givens a partir do grid recebido,
         # ao criar um novo Board com o grid alterado, mantemos a regra
         # de que apenas as células originalmente vazias são editáveis.
-        return Board(new_grid, n=self._n)
+        return Board(new_grid, n=self._n, _given_mask=self._given)
 
     def is_full(self) -> bool:
         """Indica se todas as células estão preenchidas (≠ EMPTY).
@@ -217,7 +230,7 @@ class Board:
         Returns:
             Board: Nova instância independente.
         """
-        return Board(self.to_grid(), n=self._n)
+        return Board(self.to_grid(), n=self._n, _given_mask=self._given)
 
     # --------------------------------------------------------------------- #
     # Representações (depuração)
