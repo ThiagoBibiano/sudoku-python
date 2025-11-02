@@ -69,6 +69,15 @@ def set_current_board(board: Board, *, board_id: Optional[str] = None, source: O
     st.session_state[KEY_GIVEN_MASK] = compute_given_mask(board)
 
 
+def update_current_board(board: Board) -> None:
+    """Atualiza APENAS o board na sessão, preservando a máscara de 'givens'.
+
+    Esta função DEVE ser usada durante o jogo (ex: Play) para
+    não tratar jogadas do usuário como novas 'givens'.
+    """
+    st.session_state[KEY_BOARD] = board
+
+
 def clear_session_board() -> None:
     """Remove o board e metadados da sessão."""
     st.session_state[KEY_BOARD] = None

@@ -19,6 +19,7 @@ from ui.state import (
     KEY_SELECTED_IDX,
     ensure_session_defaults,
     set_current_board,
+    update_current_board,
 )
 
 
@@ -39,12 +40,7 @@ def _apply_edits(proposed: List[List[int]]) -> None:
                 # Atualiza de forma funcional para evitar efeitos colaterais
                 new_board = new_board.with_value(r, c, new_val)
 
-    # Reatribui mantendo id/origem e preservando máscara original
-    set_current_board(
-        new_board,
-        board_id=st.session_state[KEY_BOARD_ID],
-        source=st.session_state[KEY_BOARD_SOURCE],
-    )
+    update_current_board(new_board)
 
 
 def _render_exporters() -> None:
@@ -97,7 +93,7 @@ def _render_navigation() -> None:
 
 
 def main() -> None:
-    """Renderiza a página Play."""
+    """Renderiza a página Play (com atualização e validação automáticas)."""
     ensure_session_defaults()
 
     st.title("🎮 Jogar (Play)")
@@ -116,39 +112,67 @@ def main() -> None:
     meta_cols[1].metric("ID", st.session_state[KEY_BOARD_ID] or "—")
     meta_cols[2].metric("Fonte", st.session_state[KEY_BOARD_SOURCE] or "—")
 
-    st.caption("Células cinza são **pistas iniciais** (não editáveis). Selecione valores nas outras células.")
+    st.caption("Células cinza são pistas iniciais. Digite 1-9 nas células azuis e pressione Enter.")
 
-    # Board editável (coleta proposta de valores)
+    # --- INÍCIO DA MODIFICAÇÃO PRINCIPAL ---
+
+    # 1. Renderiza o board e coleta as propostas (como antes)
     proposed = render_editable_matrix(board, given_mask)
 
-    cols = st.columns(3)
-    with cols[0]:
-        if st.button("Aplicar alterações", type="primary"):
-            _apply_edits(proposed)
-            st.success("Alterações aplicadas.")
-    with cols[1]:
-        rules = SudokuRules()
-        if st.button("Validar regras"):
-            ok = rules.is_globally_consistent(st.session_state[KEY_BOARD])
-            if ok:
-                st.success("Sem duplicatas em linhas/colunas/caixas.")
+    # 2. APLICA AS ALTERAÇÕES IMEDIATAMENTE (sem botão)
+    #    Toda vez que o usuário pressiona "Enter" em uma célula,
+    #    o script re-executa, 'proposed' contém o novo valor,
+    #    e _apply_edits atualiza o session_state.
+    _apply_edits(proposed)
+
+    # 3. VALIDA O NOVO ESTADO IMEDIATAMENTE (sem botão)
+    #    Pega o board recém-atualizado do session_state
+    current_board = st.session_state[KEY_BOARD]
+    rules = SudokuRules()
+
+    # Cria um container para a mensagem de status
+    status_placeholder = st.empty()
+
+    if not rules.is_globally_consistent(current_board):
+        status_placeholder.error("❌ Há violações das regras (duplicatas detectadas).")
+    else:
+        # Se for consistente, verifica se está resolvido
+        if current_board.is_full():
+            if rules.is_solved(current_board):
+                status_placeholder.success("🎉 Parabéns! Puzzle resolvido com sucesso!")
+                st.balloons()
             else:
-                st.error("Há violações das regras (duplicatas).")
-    with cols[2]:
-        if st.button("Limpar células editáveis"):
-            # Define 0 em todas as células não-given
-            size = board.size()
-            cleared = board
-            for r in range(size):
-                for c in range(size):
-                    if not given_mask[r][c] and cleared.get(r, c) != EMPTY:
-                        cleared = cleared.with_value(r, c, EMPTY)
-            set_current_board(
-                cleared,
-                board_id=st.session_state[KEY_BOARD_ID],
-                source=st.session_state[KEY_BOARD_SOURCE],
-            )
-            st.success("Células editáveis limpas.")
+                # Caso raro: cheio, consistente, mas não resolvido (ex: faltam regras)
+                status_placeholder.warning("Puzzle preenchido, mas algo está incorreto.")
+        else:
+            status_placeholder.info("✅ Tudo certo. Continue jogando.")
+
+    # --- FIM DA MODIFICAÇÃO PRINCIPAL ---
+
+# Botão de Limpar (este ainda é útil)
+    if st.button("Limpar células editáveis"):
+        # Pega o board e mask ATUAIS da sessão
+        board = st.session_state[KEY_BOARD]
+        given_mask = st.session_state[KEY_GIVEN_MASK]
+        size = board.size()
+
+        cleared = board
+        # Itera para criar um novo board com as células limpas
+        for r in range(size):
+            for c in range(size):
+                if not given_mask[r][c] and cleared.get(r, c) != EMPTY:
+                    # A correção em core/board.py garante que with_value funciona
+                    cleared = cleared.with_value(r, c, EMPTY)
+
+        # 1. Usar a função 'update' que não mexe na given_mask
+        update_current_board(cleared)
+
+        st.success("Células editáveis limpas.")
+
+        # 2. FORÇAR RE-EXECUÇÃO
+        # Isso é essencial para que o render_editable_matrix
+        # pegue o 'cleared' board do session_state na próxima execução.
+        st.rerun()
 
     st.divider()
     _render_exporters()
