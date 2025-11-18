@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List
 
 import streamlit as st
 
@@ -21,6 +21,53 @@ from ui.state import (
     set_current_board,
     update_current_board,
 )
+
+
+def compute_completion_stats(board) -> Dict:
+    """Conta linhas, colunas e caixas completas do board atual."""
+
+    size = board.size()
+    if size <= 0:
+        return {"rows": 0, "cols": 0, "boxes": 0, "size": size, "boxes_total": 0}
+
+    n = int(size ** 0.5)
+    boxes_total = n * n
+    expected = set(range(1, size + 1))
+
+    def is_complete(values: List[int]) -> bool:
+        return all(v != EMPTY for v in values) and set(values) == expected
+
+    rows_complete = 0
+    cols_complete = 0
+    boxes_complete = 0
+
+    for r in range(size):
+        row_values = [board.get(r, c) for c in range(size)]
+        if is_complete(row_values):
+            rows_complete += 1
+
+    for c in range(size):
+        col_values = [board.get(r, c) for r in range(size)]
+        if is_complete(col_values):
+            cols_complete += 1
+
+    for br in range(0, size, n):
+        for bc in range(0, size, n):
+            box_values = [
+                board.get(r, c)
+                for r in range(br, br + n)
+                for c in range(bc, bc + n)
+            ]
+            if is_complete(box_values):
+                boxes_complete += 1
+
+    return {
+        "rows": rows_complete,
+        "cols": cols_complete,
+        "boxes": boxes_complete,
+        "size": size,
+        "boxes_total": boxes_total,
+    }
 
 
 def _apply_edits(proposed: List[List[int]]) -> None:
@@ -106,6 +153,8 @@ def main() -> None:
         st.page_link("pages/02_Load.py", label="Ir para Carregar (Load) →", icon="📥")
         return
 
+    completion_stats = compute_completion_stats(board)
+
     # Cabeçalho com metadados
     meta_cols = st.columns([2, 2, 3])
     meta_cols[0].metric("Dimensão", f"{board.size()} × {board.size()}")
@@ -113,6 +162,18 @@ def main() -> None:
     meta_cols[2].metric("Fonte", st.session_state[KEY_BOARD_SOURCE] or "—")
 
     st.caption("Células cinza são pistas iniciais. Digite 1-9 nas células azuis e pressione Enter.")
+
+    progress_cols = st.columns(3)
+    progress_data = [
+        ("Linhas completas", completion_stats["rows"], completion_stats["size"]),
+        ("Colunas completas", completion_stats["cols"], completion_stats["size"]),
+        ("Caixas completas", completion_stats["boxes"], completion_stats["boxes_total"]),
+    ]
+
+    for col, (label, value, total) in zip(progress_cols, progress_data):
+        col.metric(label, f"{value}/{total}")
+        fraction = value / total if total else 0.0
+        col.progress(fraction)
 
     # --- INÍCIO DA MODIFICAÇÃO PRINCIPAL ---
 
