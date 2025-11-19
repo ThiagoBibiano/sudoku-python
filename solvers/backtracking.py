@@ -1,0 +1,99 @@
+"""Implementação do solver de backtracking para Sudoku.
+
+Mantém responsabilidades bem separadas para facilitar as próximas etapas do
+roadmap (heurísticas, explain mode, benchmarking, outros solvers) sem precisar
+reescrever a base.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Iterator, Optional, Tuple
+
+from core.board import Board
+from core.rules import SudokuRules
+
+from .base import Solver
+
+
+@dataclass
+class SearchMetrics:
+    """Estrutura leve que armazena estatísticas da recursão."""
+
+    explored_nodes: int = 0
+
+
+class BacktrackingSolver(Solver):
+    """Solver de Sudoku por backtracking em profundidade.
+
+    Mantém o tabuleiro original intacto usando operações imutáveis
+    (``Board.with_value``). Os ganchos auxiliares (``_select_cell`` e
+    ``_ordered_candidates``) facilitam a introdução de heurísticas como MRV/LCV
+    ou ordenações especiais para o Explain Mode.
+    """
+
+    def __init__(self, rules: Optional[SudokuRules] = None) -> None:
+        """Cria uma instância do solver.
+
+        Args:
+            rules: Regras opcionais; usa :class:`SudokuRules` por padrão.
+        """
+
+        self._rules = rules or SudokuRules()
+        self._metrics = SearchMetrics()
+
+    def solve(self, board: Board) -> Optional[Board]:
+        """
+        Resolve ``board`` retornando uma nova instância de :class:`Board`.
+        """
+
+        self._metrics = SearchMetrics()
+        return self._search(board)
+
+    def metrics(self) -> SearchMetrics:
+        """Exibe as estatísticas coletadas na última execução."""
+
+        return self._metrics
+
+    def _search(self, board: Board) -> Optional[Board]:
+        """DFS recursivo responsável pelo backtracking."""
+
+        self._metrics.explored_nodes += 1
+        next_cell = self._select_cell(board)
+        if next_cell is None:
+            return board if self._rules.is_solved(board) else None
+
+        row, col = next_cell
+        for value in self._ordered_candidates(board, row, col):
+            if not self._rules.can_place(board, row, col, value):
+                continue
+            try:
+                new_board = board.with_value(row, col, value)
+            except PermissionError:
+                continue
+            solved = self._search(new_board)
+            if solved is not None:
+                return solved
+        return None
+
+    def _select_cell(self, board: Board) -> Optional[Tuple[int, int]]:
+        """Seleciona a próxima célula vazia.
+
+        A estratégia padrão caminha linha a linha, mas heurísticas futuras
+        podem sobrescrever o método (ex.: MRV) mantendo o núcleo recursivo.
+        """
+
+        size = board.size()
+        for row in range(size):
+            for col in range(size):
+                if board.get(row, col) == 0:
+                    return (row, col)
+        return None
+
+    def _ordered_candidates(
+        self, board: Board, row: int, col: int
+    ) -> Iterator[int]:
+        """Gera dígitos candidatos para ``(row, col)`` na ordem explorada."""
+
+        size = board.size()
+        for value in range(1, size + 1):
+            yield value
