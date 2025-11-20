@@ -194,6 +194,24 @@ def main() -> None:
         help="A lista vem do registro central de solvers.",
     )
 
+    with st.expander("Como funciona este algoritmo?"):
+        st.markdown(
+            """
+            ### Backtracking (força bruta)
+            - Explora o tabuleiro como um labirinto: preenche uma célula, avança; se travar, volta (backtrack) e tenta outro valor.
+            - Passos: escolher célula vazia -> tentar valor -> avançar; se esgotar, retrocede.
+            - Garante solução se existir, mas pode explorar muitas combinações.
+
+            ### Heurística MRV (Minimum Remaining Values) — "falhar primeiro"
+            - Escolhe a célula vazia com **menos candidatos** possíveis.
+            - Se uma célula só aceita um número, ela é resolvida antes, reduzindo a árvore de busca.
+
+            ### Heurística LCV (Least Constraining Value) — "deixar portas abertas"
+            - Ordena os candidatos para uma célula priorizando o valor que restringe **menos** os vizinhos.
+            - Valores que causam menos conflitos são testados primeiro, reduzindo a chance de backtrack.
+            """
+        )
+
     meta_cols = st.columns([2, 2, 2])
     meta_cols[0].metric("Dimensão", f"{board.size()}×{board.size()}")
     meta_cols[1].metric("ID", st.session_state[KEY_BOARD_ID] or "—")

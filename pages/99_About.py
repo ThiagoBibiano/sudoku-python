@@ -27,6 +27,11 @@ def main() -> None:
         "- 🔜 Etapas 6–14: Solvers, Explain, Propagação, Benchmarks e AI Lab\n"
     )
 
+    st.subheader("Algoritmos e heurísticas")
+    st.markdown(
+        "Leia mais sobre backtracking, MRV e LCV em `docs/ALGORITHMS.md` para detalhes técnicos e motivação das heurísticas."
+    )
+
     st.caption("Execução: `streamlit run sudokku/ui/app.py`")
 
 
