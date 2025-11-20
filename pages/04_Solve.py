@@ -27,6 +27,7 @@ SOLVE_SOLVER = "solve_solver_name"
 SOLVE_BOARD = "solve_board"
 SOLVE_ERROR = "solve_error"
 SOLVE_METRICS = "solve_metrics"
+SOLVE_STOP = "solve_stop_requested"
 
 
 def _ensure_solver_state_defaults() -> None:
@@ -37,6 +38,7 @@ def _ensure_solver_state_defaults() -> None:
     ss.setdefault(SOLVE_BOARD, None)
     ss.setdefault(SOLVE_ERROR, None)
     ss.setdefault(SOLVE_METRICS, None)
+    ss.setdefault(SOLVE_STOP, False)
 
 
 def _clear_solver_result() -> None:
@@ -45,6 +47,7 @@ def _clear_solver_result() -> None:
     st.session_state[SOLVE_BOARD] = None
     st.session_state[SOLVE_ERROR] = None
     st.session_state[SOLVE_METRICS] = None
+    st.session_state[SOLVE_STOP] = False
 
 
 def _run_solver(solver_name: str) -> Tuple[Optional[Any], Optional[Dict[str, Any]]]:
@@ -137,6 +140,9 @@ def _run_solver_explain(solver_name: str, step_delay: float) -> Tuple[Optional[A
     solved_board: Optional[Any] = None
 
     for event in solver.solve_generator(board):
+        if st.session_state.get(SOLVE_STOP, False):
+            status_placeholder.warning("Execução interrompida pelo usuário.")
+            break
         snapshot = event.board or board
         board = snapshot
 
@@ -201,13 +207,18 @@ def main() -> None:
     action_cols = st.columns([1, 1, 1])
     run_label = "Executar (Explain Mode)" if explain_mode else "Resolver"
     run_clicked = action_cols[0].button(run_label, type="primary")
+    stop_clicked = action_cols[1].button("Parar", type="secondary")
     clear_clicked = action_cols[2].button("Limpar resultado", type="secondary")
 
     if clear_clicked:
         _clear_solver_result()
 
+    if stop_clicked:
+        st.session_state[SOLVE_STOP] = True
+
     if run_clicked:
         _clear_solver_result()  # limpa antes de nova execução
+        st.session_state[SOLVE_STOP] = False
         solver_name = st.session_state[SOLVE_SOLVER] or solver_names[0]
 
         try:

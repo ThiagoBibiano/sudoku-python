@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from core.board import Board
 from core.rules import SudokuRules
 from solvers import BacktrackingSolver
+from solvers.types import StepEvent
 from solvers.registry import all_registered, get
 
 
@@ -41,3 +42,12 @@ def test_solver_registry_exposes_backtracking_solver() -> None:
     registry_snapshot = all_registered()
     assert "backtracking" in registry_snapshot
     assert get("backtracking") is BacktrackingSolver
+
+
+def test_backtracking_solver_generator_emits_events() -> None:
+    board = Board(EASY_PUZZLE, n=3)
+    solver = BacktrackingSolver()
+    events = list(solver.solve_generator(board))
+
+    assert any(isinstance(ev, StepEvent) and ev.step_type == "assign" for ev in events)
+    assert any(ev.step_type == "finished" for ev in events)
