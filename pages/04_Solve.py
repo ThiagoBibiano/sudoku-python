@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from typing import Any, Dict, Optional, Tuple
+import time
 
 import streamlit as st
 
@@ -55,16 +56,21 @@ def _run_solver(solver_name: str) -> Tuple[Optional[Any], Optional[Dict[str, Any
     board = st.session_state[KEY_BOARD]
     solved_board = solver.solve(board.clone())
 
-    metrics: Optional[Dict[str, Any]] = None
-    metrics_fn = getattr(solver, "metrics", None)
-    if callable(metrics_fn):
-        metrics_obj = metrics_fn()
-        try:
-            metrics = asdict(metrics_obj)
-        except TypeError:
-            metrics = metrics_obj  # type: ignore[assignment]
+    metrics = _extract_metrics(solver)
 
     return solved_board, metrics
+
+
+def _extract_metrics(solver: Any) -> Optional[Dict[str, Any]]:
+    """Converte métricas do solver para dicionário, se disponível."""
+    metrics_fn = getattr(solver, "metrics", None)
+    if not callable(metrics_fn):
+        return None
+    metrics_obj = metrics_fn()
+    try:
+        return asdict(metrics_obj)
+    except TypeError:
+        return metrics_obj  # type: ignore[return-value]
 
 
 def _render_results() -> None:
@@ -115,6 +121,42 @@ def _render_results() -> None:
         st.page_link("pages/03_Play.py", label="Ir para Jogar (Play) →", icon="🎮")
 
 
+def _run_solver_explain(solver_name: str, step_delay: float) -> Tuple[Optional[Any], Optional[Dict[str, Any]]]:
+    """Executa o solver no modo explicação, animando passo a passo."""
+    registry = all_registered()
+    solver_cls = registry[solver_name]
+    solver = solver_cls()
+
+    if not hasattr(solver, "solve_generator"):
+        raise ValueError("Modo explicação requer solver com suporte a `solve_generator`.")
+
+    board = st.session_state[KEY_BOARD].clone()
+    board_placeholder = st.empty()
+    status_placeholder = st.empty()
+
+    solved_board: Optional[Any] = None
+
+    for event in solver.solve_generator(board):
+        snapshot = event.board or board
+        board = snapshot
+
+        with board_placeholder.container():
+            render_readonly_board(snapshot, highlight_cell=event.cell)
+
+        status_text = f"{event.step_type.upper()} — célula {event.cell}, valor {event.value}"
+        if event.reason:
+            status_text += f" ({event.reason})"
+        status_placeholder.info(status_text)
+
+        time.sleep(max(step_delay, 0.01))
+
+        if event.step_type == "finished":
+            solved_board = snapshot
+
+    metrics = _extract_metrics(solver)
+    return solved_board, metrics
+
+
 def main() -> None:
     """Renderiza a página Solve."""
     ensure_session_defaults()
@@ -151,8 +193,14 @@ def main() -> None:
     meta_cols[1].metric("ID", st.session_state[KEY_BOARD_ID] or "—")
     meta_cols[2].metric("Fonte", st.session_state[KEY_BOARD_SOURCE] or "—")
 
+    explain_mode = st.checkbox("Modo explicação (visualizar passos)")
+    step_delay = 0.15
+    if explain_mode:
+        step_delay = st.slider("Intervalo entre passos (s)", 0.05, 0.5, 0.15, 0.05)
+
     action_cols = st.columns([1, 1, 1])
-    run_clicked = action_cols[0].button("Resolver", type="primary")
+    run_label = "Executar (Explain Mode)" if explain_mode else "Resolver"
+    run_clicked = action_cols[0].button(run_label, type="primary")
     clear_clicked = action_cols[2].button("Limpar resultado", type="secondary")
 
     if clear_clicked:
@@ -164,7 +212,10 @@ def main() -> None:
 
         try:
             with st.spinner(f"Executando solver '{solver_name}'..."):
-                solved_board, metrics = _run_solver(solver_name)
+                if explain_mode:
+                    solved_board, metrics = _run_solver_explain(solver_name, step_delay)
+                else:
+                    solved_board, metrics = _run_solver(solver_name)
 
             st.session_state[SOLVE_ATTEMPTED] = True
             st.session_state[SOLVE_BOARD] = solved_board
