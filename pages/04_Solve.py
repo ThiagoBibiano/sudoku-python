@@ -55,6 +55,17 @@ SOLVER_EXPLANATIONS = {
 
     **Resumo:** Reduz drasticamente a árvore de busca ao atacar os gargalos do problema primeiro.
     """,
+    "forward_checking": """
+    ### ✂️ Forward Checking (Propagação de Domínios)
+    **Estratégia: Cortar o mal pela raiz**
+
+    Em vez de apenas testar valores, este método **gerencia candidatos** de cada célula:
+    - Mantém um domínio (lista de opções) para cada célula.
+    - Ao atribuir um valor, remove-o automaticamente dos vizinhos (linha, coluna, caixa).
+    - Se algum vizinho ficar sem opções, sabemos imediatamente que a escolha foi ruim e voltamos (backtrack) cedo.
+
+    **Resumo:** Detecta falhas antes de aprofundar a busca, reduzindo chutes desnecessários.
+    """,
 }
 
 
