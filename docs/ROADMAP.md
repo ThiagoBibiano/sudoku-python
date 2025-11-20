@@ -7,7 +7,7 @@
 - [x] Etapa 3 — Validador de regras
 - [x] Etapa 4 — IO simples
 - [x] Etapa 5 — Streamlit MVP (esqueleto multipáginas)
-- [ ] Etapa 6 — Solver base + backtracking
+- [x] Etapa 6 — Solver base + backtracking
 - [ ] Etapa 7 — Integração Streamlit
 - [ ] Etapa 8 — Explain Mode + MRV/LCV
 - [ ] Etapa 9 — Propagação de candidatos
