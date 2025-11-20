@@ -54,3 +54,4 @@ def all_registered() -> Dict[str, Type[Solver]]:
         Dicionário {nome: classe}.
     """
     return dict(_REGISTRY)
+
