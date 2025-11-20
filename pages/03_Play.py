@@ -153,6 +153,8 @@ def main() -> None:
         st.page_link("pages/02_Load.py", label="Ir para Carregar (Load) →", icon="📥")
         return
 
+    st.page_link("pages/04_Solve.py", label="Resolver automaticamente (Solve) →", icon="🧠")
+
     completion_stats = compute_completion_stats(board)
 
     # Cabeçalho com metadados

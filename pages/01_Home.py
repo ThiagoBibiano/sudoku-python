@@ -29,7 +29,11 @@ def main() -> None:
         meta = f"ID: `{st.session_state[KEY_BOARD_ID]}` — Fonte: `{st.session_state[KEY_BOARD_SOURCE]}`"
         st.caption(meta)
         render_readonly_board(board)
-        st.page_link("pages/03_Play.py", label="Ir para Jogar (Play) →", icon="🎮")
+        nav_cols = st.columns(2)
+        with nav_cols[0]:
+            st.page_link("pages/03_Play.py", label="Ir para Jogar (Play) →", icon="🎮")
+        with nav_cols[1]:
+            st.page_link("pages/04_Solve.py", label="Ir para Resolver (Solve) →", icon="🧠")
     else:
         st.info("Nenhum puzzle carregado ainda.")
         st.page_link("pages/02_Load.py", label="Ir para Carregar (Load) →", icon="📥")
