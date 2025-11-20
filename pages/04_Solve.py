@@ -55,6 +55,17 @@ SOLVER_EXPLANATIONS = {
 
     **Resumo:** Reduz drasticamente a árvore de busca ao atacar os gargalos do problema primeiro.
     """,
+    "forward_checking": """
+    ### ✂️ Forward Checking (Propagação de Domínios)
+    **Estratégia: Cortar o mal pela raiz**
+
+    Em vez de apenas testar valores, este método **gerencia candidatos** de cada célula:
+    - Mantém um domínio (lista de opções) para cada célula.
+    - Ao atribuir um valor, remove-o automaticamente dos vizinhos (linha, coluna, caixa).
+    - Se algum vizinho ficar sem opções, sabemos imediatamente que a escolha foi ruim e voltamos (backtrack) cedo.
+
+    **Resumo:** Detecta falhas antes de aprofundar a busca, reduzindo chutes desnecessários.
+    """,
 }
 
 
@@ -158,9 +169,6 @@ def _run_solver_explain(solver_name: str, step_delay: float) -> Tuple[Optional[A
     solver_cls = registry[solver_name]
     solver = solver_cls()
 
-    if not hasattr(solver, "solve_generator"):
-        raise ValueError("Modo explicação requer solver com suporte a `solve_generator`.")
-
     board = st.session_state[KEY_BOARD].clone()
     board_placeholder = st.empty()
     status_placeholder = st.empty()
@@ -232,7 +240,14 @@ def main() -> None:
     meta_cols[1].metric("ID", st.session_state[KEY_BOARD_ID] or "—")
     meta_cols[2].metric("Fonte", st.session_state[KEY_BOARD_SOURCE] or "—")
 
+    solver_cls = registry[solver_name]
+    supports_explain = hasattr(solver_cls, "solve_generator")
+
     explain_mode = st.checkbox("Modo explicação (visualizar passos)")
+    if explain_mode and not supports_explain:
+        st.warning("Este solver não expõe `solve_generator`; execute no modo normal.")
+        explain_mode = False
+
     step_delay = 0.15
     if explain_mode:
         step_delay = st.slider("Intervalo entre passos (s)", 0.05, 0.5, 0.15, 0.05)
