@@ -1,8 +1,9 @@
-"""Testes para o solver básico de backtracking."""
+"""Testes para o solver heurístico com MRV/LCV e modo generator."""
 from __future__ import annotations
 
 from pathlib import Path
 import sys
+from typing import List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -10,12 +11,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from core.board import Board
 from core.rules import SudokuRules
-from solvers import BacktrackingSolver
+from solvers import HeuristicBacktrackingSolver
 from solvers.types import StepEvent
-from solvers.registry import all_registered, get
 
 
-EASY_PUZZLE = [
+EASY_PUZZLE: List[List[int]] = [
     [0, 0, 0, 2, 6, 0, 7, 0, 1],
     [6, 8, 0, 0, 7, 0, 0, 9, 0],
     [1, 9, 0, 0, 0, 4, 5, 0, 0],
@@ -28,9 +28,9 @@ EASY_PUZZLE = [
 ]
 
 
-def test_backtracking_solver_solves_puzzle() -> None:
+def test_heuristic_solver_solves_puzzle() -> None:
     board = Board(EASY_PUZZLE, n=3)
-    solver = BacktrackingSolver()
+    solver = HeuristicBacktrackingSolver()
     solved = solver.solve(board)
 
     assert solved is not None
@@ -38,15 +38,9 @@ def test_backtracking_solver_solves_puzzle() -> None:
     assert board.get(0, 0) == 0
 
 
-def test_solver_registry_exposes_backtracking_solver() -> None:
-    registry_snapshot = all_registered()
-    assert "backtracking" in registry_snapshot
-    assert get("backtracking") is BacktrackingSolver
-
-
-def test_backtracking_solver_generator_emits_events() -> None:
+def test_heuristic_solver_generator_emits_events() -> None:
     board = Board(EASY_PUZZLE, n=3)
-    solver = BacktrackingSolver()
+    solver = HeuristicBacktrackingSolver()
     events = list(solver.solve_generator(board))
 
     assert any(isinstance(ev, StepEvent) and ev.step_type == "assign" for ev in events)

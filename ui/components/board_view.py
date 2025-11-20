@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 import streamlit as st
 
@@ -102,7 +102,12 @@ def _apply_board_styles() -> None:
 # Renderização (Modificada)
 # ----------------------------------------------------------------------
 
-def render_readonly_board(board: Board, *, box_dividers: bool = True) -> None:
+def render_readonly_board(
+    board: Board,
+    *,
+    box_dividers: bool = True,
+    highlight_cell: Optional[Tuple[int, int]] = None,
+) -> None:
     """Desenha o tabuleiro somente leitura (usando novo CSS)."""
     _apply_board_styles() # Aplica o CSS
     size = board.size()
@@ -114,9 +119,12 @@ def render_readonly_board(board: Board, *, box_dividers: bool = True) -> None:
             v = board.get(r, c)
             label = str(v) if v != EMPTY else ""
             border_css = _cell_borders_css(r, c, n, box_dividers, is_readonly=True)
+            highlight = ""
+            if highlight_cell and (r, c) == highlight_cell:
+                highlight = "border-color: #f39c12; box-shadow: 0 0 0 2px #f39c12 inset;"
 
             cols[c].markdown(
-                f"<div class='sudoku-cell-readonly' style='{border_css}'>{label}</div>",
+                f"<div class='sudoku-cell-readonly' style='{border_css} {highlight}'>{label}</div>",
                 unsafe_allow_html=True,
             )
 
