@@ -167,7 +167,6 @@ def main() -> None:
                 solved_board, metrics = _run_solver(solver_name)
 
             st.session_state[SOLVE_ATTEMPTED] = True
-            st.session_state[SOLVE_SOLVER] = solver_name
             st.session_state[SOLVE_BOARD] = solved_board
             st.session_state[SOLVE_METRICS] = metrics
         except Exception as exc:  # noqa: BLE001
