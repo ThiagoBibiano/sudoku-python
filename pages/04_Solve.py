@@ -29,6 +29,34 @@ SOLVE_ERROR = "solve_error"
 SOLVE_METRICS = "solve_metrics"
 SOLVE_STOP = "solve_stop_requested"
 
+SOLVER_EXPLANATIONS = {
+    "backtracking": """
+    ### 🐢 Backtracking (Padrão)
+    **Estratégia: Tentativa e Erro (Força Bruta Inteligente)**
+
+    Este algoritmo explora o tabuleiro como um labirinto:
+    1. **Escolhe** a primeira célula vazia que encontra.
+    2. **Tenta** colocar o número 1. Se as regras permitirem, avança.
+    3. **Recua (Backtrack)** se chegar a um beco sem saída (nenhum número serve), voltando à célula anterior para trocar o valor.
+
+    **Resumo:** Garante encontrar a solução, mas pode ser lento pois "chuta" valores sem analisar qual célula é mais crítica.
+    """,
+    "heuristic_backtracking": """
+    ### 🐇 Backtracking com Heurísticas (MRV + LCV)
+    **Estratégia: Ordem Otimizada de Escolha**
+
+    Usa o mesmo motor do Backtracking, mas com duas "bússolas" para decidir o próximo passo:
+
+    1. **MRV (Minimum Remaining Values):** Responde *"Qual célula preencher?"*.
+       - Escolhe a célula com **menos candidatos possíveis**. Se uma célula só aceita o número '7', preenchemos ela agora para evitar erros futuros. ("Falhar primeiro").
+
+    2. **LCV (Least Constraining Value):** Responde *"Qual número testar?"*.
+       - Escolhe o número que elimina **menos opções** dos vizinhos. Tentamos deixar o caminho aberto para as outras células.
+
+    **Resumo:** Reduz drasticamente a árvore de busca ao atacar os gargalos do problema primeiro.
+    """,
+}
+
 
 def _ensure_solver_state_defaults() -> None:
     """Cria chaves de sessão usadas nesta página."""
@@ -183,34 +211,21 @@ def main() -> None:
 
     solver_names = sorted(registry.keys())
     default_idx = 0
-    if st.session_state[SOLVE_SOLVER] in solver_names:
+    if "backtracking" in solver_names:
+        default_idx = solver_names.index("backtracking")
+    elif st.session_state[SOLVE_SOLVER] in solver_names:
         default_idx = solver_names.index(st.session_state[SOLVE_SOLVER])
 
-    st.selectbox(
-        "Escolha o solver para usar",
+    solver_name = st.selectbox(
+        "Escolha o algoritmo de resolução:",
         options=solver_names,
         index=default_idx,
         key=SOLVE_SOLVER,
-        help="A lista vem do registro central de solvers.",
     )
 
-    with st.expander("Como funciona este algoritmo?"):
-        st.markdown(
-            """
-            ### Backtracking (força bruta)
-            - Explora o tabuleiro como um labirinto: preenche uma célula, avança; se travar, volta (backtrack) e tenta outro valor.
-            - Passos: escolher célula vazia -> tentar valor -> avançar; se esgotar, retrocede.
-            - Garante solução se existir, mas pode explorar muitas combinações.
-
-            ### Heurística MRV (Minimum Remaining Values) — "falhar primeiro"
-            - Escolhe a célula vazia com **menos candidatos** possíveis.
-            - Se uma célula só aceita um número, ela é resolvida antes, reduzindo a árvore de busca.
-
-            ### Heurística LCV (Least Constraining Value) — "deixar portas abertas"
-            - Ordena os candidatos para uma célula priorizando o valor que restringe **menos** os vizinhos.
-            - Valores que causam menos conflitos são testados primeiro, reduzindo a chance de backtrack.
-            """
-        )
+    explanation = SOLVER_EXPLANATIONS.get(solver_name, "Sem descrição disponível para este solver.")
+    with st.container():
+        st.info(explanation, icon="ℹ️")
 
     meta_cols = st.columns([2, 2, 2])
     meta_cols[0].metric("Dimensão", f"{board.size()}×{board.size()}")
