@@ -8,7 +8,7 @@
 - [x] Etapa 4 — IO simples
 - [x] Etapa 5 — Streamlit MVP (esqueleto multipáginas)
 - [x] Etapa 6 — Solver base + backtracking
-- [ ] Etapa 7 — Integração Streamlit
+- [x] Etapa 7 — Integração Streamlit
 - [ ] Etapa 8 — Explain Mode + MRV/LCV
 - [ ] Etapa 9 — Propagação de candidatos
 - [ ] Etapa 10 — Benchmark page
@@ -16,4 +16,3 @@
 - [ ] Etapa 12 — Metaheurística
 - [ ] Etapa 13 — AI Lab
 - [ ] Etapa 14 — Polimento v0.1
-

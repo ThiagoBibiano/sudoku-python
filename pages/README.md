@@ -1,8 +1,8 @@
-# Páginas do Streamlit
+# Páginas do Streamlit (MVP)
 
-As páginas serão adicionadas a partir da **Etapa 5**:
-- 01_Play
-- 02_Solve
-- 03_Benchmark
-- 04_AI_Lab
-
+Etapas atuais:
+- 01_Home
+- 02_Load
+- 03_Play
+- 04_Solve
+- 99_About
