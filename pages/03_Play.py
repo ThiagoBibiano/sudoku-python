@@ -121,11 +121,11 @@ def _render_navigation() -> None:
 
     cols = st.columns(3)
     with cols[0]:
-        prev = st.button("⬅️ Anterior", use_container_width=True)
+        prev = st.button("⬅️ Anterior", width="stretch")
     with cols[1]:
         st.write(f"Índice: {idx + 1}/{len(entries)}")
     with cols[2]:
-        nxt = st.button("Próximo ➡️", use_container_width=True)
+        nxt = st.button("Próximo ➡️", width="stretch")
 
     if prev and idx > 0:
         idx -= 1

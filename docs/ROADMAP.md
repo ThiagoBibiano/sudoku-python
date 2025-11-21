@@ -11,7 +11,7 @@
 - [x] Etapa 7 — Integração Streamlit
 - [x] Etapa 8 — Explain Mode + MRV/LCV
 - [x] Etapa 9 — Propagação de candidatos
-- [ ] Etapa 10 — Benchmark page
+- [x] Etapa 10 — Benchmark page
 - [ ] Etapa 11 — Solver discreto (DLX ou CP-SAT)
 - [ ] Etapa 12 — Metaheurística
 - [ ] Etapa 13 — AI Lab
