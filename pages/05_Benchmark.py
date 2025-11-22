@@ -23,7 +23,7 @@ KEY_PUZZLE_FILTER = "benchmark_puzzle_filter"
 KEY_LOG_TIME = "benchmark_log_time"
 KEY_LOG_NODES = "benchmark_log_nodes"
 KEY_SOLVERS_SELECTED = "benchmark_solvers_selected"
-KEY_DIFFICULTY = "benchmark_difficulty"
+KEY_DATASET = "benchmark_dataset"
 
 
 def _ensure_session_defaults() -> None:
@@ -35,7 +35,7 @@ def _ensure_session_defaults() -> None:
     ss.setdefault(KEY_LOG_TIME, False)
     ss.setdefault(KEY_LOG_NODES, False)
     ss.setdefault(KEY_SOLVERS_SELECTED, None)
-    ss.setdefault(KEY_DIFFICULTY, None)
+    ss.setdefault(KEY_DATASET, None)
 
 
 def _load_ndjson(path: Path) -> List[PuzzleEntry]:
@@ -163,18 +163,17 @@ def main() -> None:
     st.write("Compare solvers em lote de puzzles (NDJSON) e visualize métricas.")
 
     data_dir = Path("data/puzzles")
-    difficulties = ["easy.ndjson", "hard.ndjson"]
-    available = [d for d in difficulties if (data_dir / d).exists()]
-    if not available:
+    ndjson_files = sorted(p.name for p in data_dir.glob("*.ndjson"))
+    if not ndjson_files:
         st.error("Nenhum arquivo NDJSON encontrado em data/puzzles.")
         return
 
     st.sidebar.header("Configuração")
-    diff_index = 0
-    if st.session_state[KEY_DIFFICULTY] in available:
-        diff_index = available.index(st.session_state[KEY_DIFFICULTY])
-    difficulty = st.sidebar.selectbox("Dificuldade", options=available, index=diff_index)
-    st.session_state[KEY_DIFFICULTY] = difficulty
+    ds_index = 0
+    if st.session_state[KEY_DATASET] in ndjson_files:
+        ds_index = ndjson_files.index(st.session_state[KEY_DATASET])
+    dataset = st.sidebar.selectbox("Dataset (NDJSON)", options=ndjson_files, index=ds_index)
+    st.session_state[KEY_DATASET] = dataset
 
     registry = all_registered()
     solver_options = sorted(registry.keys())
@@ -197,7 +196,7 @@ def main() -> None:
             st.warning("Selecione ao menos um solver.")
             return
 
-        entries = _load_ndjson(data_dir / difficulty)
+        entries = _load_ndjson(data_dir / dataset)
         if not entries:
             st.warning("Nenhum puzzle carregado.")
             return
