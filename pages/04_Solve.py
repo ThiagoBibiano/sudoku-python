@@ -75,6 +75,14 @@ SOLVER_EXPLANATIONS = {
     - Não depende de "chute"; busca uma configuração viável/ótima de forma declarativa e muito rápida.
     - Métricas de "nós" usam **ramificações** reportadas pelo OR-Tools (proxy aproximado).
     """,
+    "dlx": """
+    ### 🧩 DLX (Dancing Links / Algorithm X)
+    **Estratégia: Cobertura Exata com 'tecido' de nós**
+
+    - Transforma o Sudoku em uma grande matriz 0/1 representando restrições (célula, linha, coluna, caixa).
+    - Usa listas duplamente ligadas (Dancing Links) para "cobrir" e "descobrir" possibilidades sem custo de realocação.
+    - É uma implementação elegante e muito rápida de força bruta exata para problemas de Cobertura Exata.
+    """,
 }
 
 
@@ -227,11 +235,11 @@ def main() -> None:
         return
 
     solver_names = sorted(registry.keys())
-    default_idx = 0
-    if "backtracking" in solver_names:
-        default_idx = solver_names.index("backtracking")
-    elif st.session_state[SOLVE_SOLVER] in solver_names:
-        default_idx = solver_names.index(st.session_state[SOLVE_SOLVER])
+    # Sanitiza o valor salvo antes de instanciar o widget
+    if st.session_state[SOLVE_SOLVER] not in solver_names:
+        st.session_state[SOLVE_SOLVER] = "backtracking" if "backtracking" in solver_names else solver_names[0]
+
+    default_idx = solver_names.index(st.session_state[SOLVE_SOLVER])
 
     solver_name = st.selectbox(
         "Escolha o algoritmo de resolução:",
