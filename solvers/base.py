@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 from dataclasses import dataclass
-from ..core.board import Board
+from core.board import Board
 
 
 class Solver(ABC):
@@ -30,4 +30,3 @@ class Solver(ABC):
             Nova instância de Board com solução; None se não houver.
         """
         raise NotImplementedError
-
