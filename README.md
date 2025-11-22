@@ -17,7 +17,7 @@ O projeto serve tanto como **engine de Sudoku** quanto como um **playground de a
   - DLX (Dancing Links)
   - Modelagem para solvers de Programação por Restrições / CP-SAT
 - ✅ Permitir **extensibilidade para heurísticas e IA**:
-  - Meta-heurísticas (ex.: Simulated Annealing)
+  - Meta-heurísticas (ex.: Simulated Annealing e Algoritmo Genético)
   - Redes neurais / modelos de ML (a explorar)
 - ⏳ Criar um **benchmark comparativo** entre diferentes abordagens de solução.
 
@@ -149,16 +149,26 @@ Alguns passos planejados para o futuro do projeto:
 
 ---
 
-## ♨️ Meta-heurísticas (novo módulo)
+## ♨️ Meta-heurísticas
 
 O projeto agora inclui uma camada para **solvers meta-heurísticos** com foco didático. Os principais pontos:
 
 * **Infraestrutura comum**: `solvers/metaheuristics/base_meta.py` padroniza configuração, custo e coleta de histórico.
-* **Simulated Annealing (SA)**: implementação inicial disponível em `solvers/metaheuristics/sa.py`, usando custo baseado em conflitos de colunas e subgrades.
+* **Simulated Annealing (SA)**: disponível em `solvers/metaheuristics/sa.py`, usa custo baseado em conflitos de colunas e subgrades.
+* **Algoritmo Genético (AG)**: implementado em `solvers/metaheuristics/ga.py`, com crossover por linhas, mutação via troca e elitismo opcional.
 * **Integração com Streamlit**: os meta-solvers seguem a interface geral de `solvers/`, permitindo seleção e visualização no app.
 * **Testes**: a suíte `tests/test_metaheuristics.py` garante reprodutibilidade e rastreamento do histórico de custo.
 
-Próximos passos incluem adicionar outros solvers (ex.: Algoritmo Genético) reutilizando a mesma base de custo e vizinhança.
+### Como usar no Streamlit
+
+1. Inicie o app com `streamlit run app.py` e acesse a página de solvers meta-heurísticos.
+2. Escolha o solver desejado (SA ou GA) no seletor de solvers.
+3. Ajuste hiperparâmetros via sliders:
+   * **SA**: temperatura inicial (`T0`), `alpha`, número máximo de iterações.
+   * **GA**: tamanho da população (`pop_size`), número de gerações (`n_generations`), probabilidade de crossover/mutação, tamanho do torneio e elitismo.
+4. Execute o solver para visualizar o tabuleiro resultante e o **histórico de custo** por iteração/geração.
+
+> Dica: defina uma **seed** na configuração do solver para repetir experimentos e comparar curvas de custo entre execuções.
 
 ---
 

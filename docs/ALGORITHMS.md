@@ -206,7 +206,7 @@ Opcionalmente, é possível adicionar:
 
 ---
 
-## 6. Meta-heurísticas (visão didática)
+## 6. Meta-heurísticas
 
 Meta-heurísticas tratam o Sudoku como **otimização** em vez de busca exata. A estratégia adotada aqui é didática e reaproveita infraestrutura comum:
 
@@ -234,9 +234,28 @@ Meta-heurísticas tratam o Sudoku como **otimização** em vez de busca exata. A
   6. Reduz a temperatura `T *= alpha` a cada iteração.
 - **No projeto:** implementado em `solvers/metaheuristics/sa.py`, utilizando helpers comuns em `solvers/metaheuristics/base_meta.py`.
 
-### 6.2 Próximos passos
+### 6.2 Algoritmo Genético (AG)
 
-- Reutilizar a mesma base para Algoritmo Genético (crossover por linhas, mutação via troca em linhas não fixas) e demais meta-heurísticas.
+- **Ideia:** população de tabuleiros completos, avaliados pela mesma função de custo; operadores de crossover/mutação preservam as pistas.
+- **Parâmetros principais:** tamanho da população (`pop_size`), número de gerações (`n_generations`), probabilidade de crossover/mutação, tamanho do torneio e fração de elitismo.
+- **Fluxo adotado:**
+  1. Geração inicial: cada indivíduo é criado com a estratégia de permutações por linha.
+  2. Avaliação: custo baseado em duplicatas de colunas/subgrades.
+  3. Seleção: torneio com `k` indivíduos, escolhendo o de menor custo.
+  4. Crossover: por linha, copiando valores não fixos de um dos pais (50/50) para o filho; as pistas são preservadas.
+  5. Mutação: aplicação opcional do operador de vizinhança (troca em linha não fixa).
+  6. Elitismo: fração do topo da população é copiada diretamente para a próxima geração.
+- **No projeto:** implementado em `solvers/metaheuristics/ga.py`, reutilizando a base comum em `base_meta.py` e registrado para consumo no app.
+
+**Notas práticas:**
+
+- As seeds configuráveis na `MetaheuristicConfig` permitem repetir experimentos e comparar curvas de custo no Streamlit.
+- A coleta de histórico (`cost_history`) guarda o melhor custo de cada geração para visualização e exportação.
+- Parâmetros conservadores (ex.: `pop_size` menor com elitismo moderado) tendem a convergir mais rápido em cenários demonstrativos; valores maiores favorecem diversidade em estudos de comparação.
+
+### 6.3 Próximos passos
+
+- Experimentar outras meta-heurísticas (Tabu Search, VNS) usando a mesma base de custo/vizinhança.
 - Expor hiperparâmetros e gráficos de custo no Streamlit para comparação com solvers exatos.
 
 ---
@@ -252,5 +271,6 @@ Resumo das abordagens principais:
 | DLX (Algorithm X) | Exato, *exact cover* | Código do projeto        | Ilustra transformação para outra estrutura (matriz) |
 | CP-SAT            | Exato (em tese)   | Solver de terceiros (CP-SAT)| Enfatiza modelagem e uso de solver genérico       |
 | Simulated Annealing | Heurístico (otimização) | Código do projeto    | Visualiza curva de custo, aceita piores soluções no começo |
+| Algoritmo Genético  | Heurístico (otimização) | Código do projeto    | Compara paradigmas populacionais (crossover/mutação) |
 
 ```
