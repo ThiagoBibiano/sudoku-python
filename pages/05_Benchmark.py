@@ -51,11 +51,16 @@ def _build_kpis(df: pd.DataFrame) -> None:
         st.info("Nenhum resultado para exibir.")
         return
 
+    # Sanitiza coluna Nodes para garantir numérico
+    df = df.copy()
+    df["Nodes"] = pd.to_numeric(df["Nodes"], errors="coerce")
+
     kpi_cols = st.columns(3)
     mean_time = df.groupby("Solver")["Time (s)"].mean().min()
     kpi_cols[0].metric("Menor tempo médio (s)", f"{mean_time:.3f}")
 
-    mean_nodes = df.groupby("Solver")["Nodes"].mean(numeric_only=True).min()
+    mean_nodes_series = df.groupby("Solver")["Nodes"].mean()
+    mean_nodes = mean_nodes_series.min()
     kpi_cols[1].metric("Menor média de nós", f"{mean_nodes:.0f}" if pd.notna(mean_nodes) else "—")
 
     success_rate = (df["Status"] == "ok").mean() * 100
@@ -229,6 +234,7 @@ def main() -> None:
     st.subheader("KPIs")
     _build_kpis(results_df)
     _speedup(results_df)
+    st.caption("Para CP-SAT, a coluna 'Nodes' usa `NumBranches()` do OR-Tools como aproximação de nós explorados.")
 
     st.divider()
     st.subheader("Filtros")

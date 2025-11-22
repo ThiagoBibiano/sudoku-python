@@ -66,6 +66,15 @@ SOLVER_EXPLANATIONS = {
 
     **Resumo:** Detecta falhas antes de aprofundar a busca, reduzindo chutes desnecessários.
     """,
+    "cp_sat": """
+    ### ⚙️ CP-SAT (Google OR-Tools)
+    **Estratégia: Programação por Restrições (Constraint Programming)**
+
+    - Traduz o Sudoku para um modelo lógico/matemático com regras rígidas (linhas, colunas e caixas com valores distintos).
+    - Um solver industrial (SAT) avalia todas as restrições ao mesmo tempo e elimina combinações impossíveis.
+    - Não depende de "chute"; busca uma configuração viável/ótima de forma declarativa e muito rápida.
+    - Métricas de "nós" usam **ramificações** reportadas pelo OR-Tools (proxy aproximado).
+    """,
 }
 
 

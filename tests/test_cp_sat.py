@@ -40,3 +40,8 @@ def test_cp_sat_solves_puzzle() -> None:
 
     assert solved is not None
     assert SudokuRules().is_solved(solved)
+
+    metrics = solver.metrics()
+    assert metrics is not None
+    assert metrics.status in {"OPTIMAL", "FEASIBLE"}
+    assert metrics.branches >= 0
