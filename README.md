@@ -16,9 +16,9 @@ O projeto serve tanto como **engine de Sudoku** quanto como um **playground de a
   - Backtracking
   - DLX (Dancing Links)
   - Modelagem para solvers de Programação por Restrições / CP-SAT
-- ⏳ Permitir **extensibilidade para heurísticas e IA**:
-  - Meta-heurísticas
-  - Redes neurais / modelos de ML
+- ✅ Permitir **extensibilidade para heurísticas e IA**:
+  - Meta-heurísticas (ex.: Simulated Annealing)
+  - Redes neurais / modelos de ML (a explorar)
 - ⏳ Criar um **benchmark comparativo** entre diferentes abordagens de solução.
 
 ---
@@ -98,8 +98,8 @@ O objetivo é que o app permita:
 * Mostrar o tabuleiro de Sudoku de forma amigável.
 * Servir de base para:
 
-  * Experimentar diferentes solvers;
-  * Comparar tempo de solução e qualidade das abordagens;
+  * Experimentar diferentes solvers (clássicos, DLX e meta-heurísticos);
+  * Comparar tempo de solução, qualidade das abordagens e evolução de custo;
   * Criar interfaces de apoio ao estudo de algoritmos.
 
 À medida que novas funcionalidades forem implementadas (solvers, heurísticas, IA etc.), elas serão expostas via UI do Streamlit.
@@ -146,6 +146,19 @@ Alguns passos planejados para o futuro do projeto:
 
   * Heurísticas de escolha de célula/valor;
   * Rede neural para sugerir jogadas ou inicializar soluções.
+
+---
+
+## ♨️ Meta-heurísticas (novo módulo)
+
+O projeto agora inclui uma camada para **solvers meta-heurísticos** com foco didático. Os principais pontos:
+
+* **Infraestrutura comum**: `solvers/metaheuristics/base_meta.py` padroniza configuração, custo e coleta de histórico.
+* **Simulated Annealing (SA)**: implementação inicial disponível em `solvers/metaheuristics/sa.py`, usando custo baseado em conflitos de colunas e subgrades.
+* **Integração com Streamlit**: os meta-solvers seguem a interface geral de `solvers/`, permitindo seleção e visualização no app.
+* **Testes**: a suíte `tests/test_metaheuristics.py` garante reprodutibilidade e rastreamento do histórico de custo.
+
+Próximos passos incluem adicionar outros solvers (ex.: Algoritmo Genético) reutilizando a mesma base de custo e vizinhança.
 
 ---
 

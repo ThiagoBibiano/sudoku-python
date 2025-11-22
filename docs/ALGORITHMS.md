@@ -7,11 +7,12 @@ Segue uma versão completa de `docs/ALGORITHMS.md` já atualizada:
 A aplicação trata o Sudoku como um **Problema de Satisfação de Restrições (CSP)**:
 cada célula é uma variável, o domínio vai de 1 a 9 e as restrições são linha/coluna/subgrade.
 
-Hoje o projeto explora três famílias de abordagem:
+Hoje o projeto explora quatro famílias de abordagem:
 
 1. **Backtracking clássico** (com heurísticas MRV/LCV).
 2. **DLX (Algorithm X / Dancing Links)** — exato via *exact cover*.
 3. **CP-SAT** — modelagem declarativa em programação por restrições.
+4. **Meta-heurísticas** — heurísticas de otimização, começando por Simulated Annealing.
 
 A ideia é ser um laboratório didático: mesmas instâncias, algoritmos diferentes.
 
@@ -205,9 +206,44 @@ Opcionalmente, é possível adicionar:
 
 ---
 
-## 6. Comparando as abordagens
+## 6. Meta-heurísticas (visão didática)
 
-Resumo das três famílias principais:
+Meta-heurísticas tratam o Sudoku como **otimização** em vez de busca exata. A estratégia adotada aqui é didática e reaproveita infraestrutura comum:
+
+- **Representação:**
+  - As pistas são fixadas e imutáveis.
+  - Cada linha é preenchida com uma permutação aleatória dos números faltantes, garantindo que as linhas sempre contenham 1..9.
+
+- **Função de custo:**
+  - Penaliza duplicatas em **colunas** e em **subgrades 3x3**.
+  - `cost = 0` significa solução válida; o histórico de custo é armazenado para visualização.
+
+- **Operador de vizinhança:**
+  - Escolhe uma linha aleatória, seleciona duas posições **não fixas** e troca os valores, preservando as pistas originais.
+
+### 6.1 Simulated Annealing (SA)
+
+- **Ideia:** busca local que aceita piores soluções com probabilidade proporcional à temperatura, permitindo escapar de mínimos locais.
+- **Parâmetros principais:** temperatura inicial `T0`, taxa de resfriamento `alpha`, `max_iters` e semente para reprodutibilidade.
+- **Fluxo:**
+  1. Gera uma solução inicial válida por linha.
+  2. Gera um vizinho com o operador descrito acima.
+  3. Calcula `Δ = cost(neighbor) - cost(current)`.
+  4. Aceita melhorias (`Δ <= 0`) ou aceita piores soluções com `exp(-Δ / T)`.
+  5. Atualiza a melhor solução e registra o histórico de custo.
+  6. Reduz a temperatura `T *= alpha` a cada iteração.
+- **No projeto:** implementado em `solvers/metaheuristics/sa.py`, utilizando helpers comuns em `solvers/metaheuristics/base_meta.py`.
+
+### 6.2 Próximos passos
+
+- Reutilizar a mesma base para Algoritmo Genético (crossover por linhas, mutação via troca em linhas não fixas) e demais meta-heurísticas.
+- Expor hiperparâmetros e gráficos de custo no Streamlit para comparação com solvers exatos.
+
+---
+
+## 7. Comparando as abordagens
+
+Resumo das abordagens principais:
 
 | Abordagem         | Tipo              | Quem controla a busca?      | Vantagens didáticas                               |
 |-------------------|-------------------|-----------------------------|---------------------------------------------------|
@@ -215,5 +251,6 @@ Resumo das três famílias principais:
 | Backtracking+MRV/LCV | Exato, CSP direto | Código do projeto        | Mostra impacto de heurísticas de busca            |
 | DLX (Algorithm X) | Exato, *exact cover* | Código do projeto        | Ilustra transformação para outra estrutura (matriz) |
 | CP-SAT            | Exato (em tese)   | Solver de terceiros (CP-SAT)| Enfatiza modelagem e uso de solver genérico       |
+| Simulated Annealing | Heurístico (otimização) | Código do projeto    | Visualiza curva de custo, aceita piores soluções no começo |
 
 ```
