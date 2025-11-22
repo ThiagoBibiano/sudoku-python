@@ -13,6 +13,6 @@
 - [x] Etapa 9 — Propagação de candidatos
 - [x] Etapa 10 — Benchmark page
 - [x] Etapa 11 — Solver discreto (DLX ou CP-SAT)
-- [ ] Etapa 12 — Metaheurística
+- [x] Etapa 12 — Metaheurística
 - [ ] Etapa 13 — AI Lab
 - [ ] Etapa 14 — Polimento v0.1
