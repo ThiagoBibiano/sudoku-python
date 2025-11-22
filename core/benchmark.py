@@ -20,6 +20,7 @@ class BenchmarkResult:
     duration_sec: float
     explored_nodes: Optional[int]
     status: str
+    error: Optional[str] = None
 
 
 class BenchmarkSession:
@@ -40,6 +41,7 @@ class BenchmarkSession:
                 start = time.perf_counter()
                 status = "ok"
                 explored_nodes: Optional[int] = None
+                error_msg: Optional[str] = None
 
                 try:
                     solved = self._run_with_timeout(solver, board, self.timeout)
@@ -50,9 +52,10 @@ class BenchmarkSession:
                 except TimeoutError:
                     duration = self.timeout
                     status = "timeout"
-                except Exception:
+                except Exception as exc:
                     duration = time.perf_counter() - start
                     status = "error"
+                    error_msg = str(exc)
 
                 results.append(
                     BenchmarkResult(
@@ -61,6 +64,7 @@ class BenchmarkSession:
                         duration_sec=duration,
                         explored_nodes=explored_nodes,
                         status=status,
+                        error=error_msg,
                     )
                 )
 
@@ -72,6 +76,7 @@ class BenchmarkSession:
                     "Time (s)": r.duration_sec,
                     "Nodes": r.explored_nodes,
                     "Status": r.status,
+                    "Error": r.error,
                 }
                 for r in results
             ]
@@ -92,4 +97,8 @@ class BenchmarkSession:
         if not callable(metrics_fn):
             return None
         metrics = metrics_fn()
-        return getattr(metrics, "explored_nodes", None)
+        # Se o solver expõe explored_nodes ou branches (caso CP-SAT), usar como proxy
+        nodes = getattr(metrics, "explored_nodes", None)
+        if nodes is None:
+            nodes = getattr(metrics, "branches", None)
+        return nodes
