@@ -1,18 +1,219 @@
+Perfeito, vamos incluir DLX e CP-SAT na mesma pegada didática.
+Segue uma versão completa de `docs/ALGORITHMS.md` já atualizada:
+
+```md
 # Algoritmos de Resolução (visão técnica)
 
-Este documento resume o funcionamento dos solvers disponíveis na aplicação, com foco em backtracking e nas heurísticas MRV/LCV que reduzem o espaço de busca.
+A aplicação trata o Sudoku como um **Problema de Satisfação de Restrições (CSP)**:
+cada célula é uma variável, o domínio vai de 1 a 9 e as restrições são linha/coluna/subgrade.
 
-## Backtracking (força bruta com retrocesso)
-- **Ideia:** Explora o tabuleiro como um labirinto. Preenche uma célula vazia, segue adiante; se não houver saída válida, volta (backtrack) à decisão anterior e tenta outro valor.
-- **Passos:** escolher célula vazia -> tentar valores 1..9 válidos -> avançar recursivamente -> se esgotar candidatos, desfaz e tenta outra ramificação.
-- **Garantia:** Encontra solução se existir, mas pode ser lento sem heurísticas.
+Hoje o projeto explora três famílias de abordagem:
 
-## MRV (Minimum Remaining Values) — "Falhar primeiro"
-- **O que faz:** Escolhe sempre a célula vazia com **menos candidatos** válidos.
-- **Motivação:** Enfrentar cedo os gargalos; se uma célula só aceita um dígito, preencha-a já.
-- **Efeito:** Reduz a árvore de busca porque elimina cedo ramificações inviáveis.
+1. **Backtracking clássico** (com heurísticas MRV/LCV).
+2. **DLX (Algorithm X / Dancing Links)** — exato via *exact cover*.
+3. **CP-SAT** — modelagem declarativa em programação por restrições.
 
-## LCV (Least Constraining Value) — "Deixar portas abertas"
-- **O que faz:** Dado um conjunto de candidatos para uma célula, testa primeiro o valor que **menos restringe** os vizinhos (linha, coluna, box).
-- **Motivação:** Evitar que uma escolha elimine opções de muitas outras células, aumentando a chance de avançar sem backtrack.
-- **Efeito:** Ordena candidatos por impacto; valores que incomodam menos são testados antes.
+A ideia é ser um laboratório didático: mesmas instâncias, algoritmos diferentes.
+
+---
+
+## 1. Backtracking “puro” (força bruta com retrocesso)
+
+- **Ideia:** Explora o tabuleiro como um labirinto de decisões.
+  - Escolhe uma célula vazia.
+  - Tenta valores de 1 a 9 que não quebrem as regras.
+  - Avança recursivamente.
+  - Se travar (nenhum valor possível), volta (“backtrack”) para a decisão anterior.
+
+- **Passos básicos do algoritmo:**
+  1. Encontrar uma célula vazia.
+  2. Gerar a lista de candidatos válidos usando as restrições de linha, coluna e box 3x3.
+  3. Para cada candidato:
+     - Atribuir o valor.
+     - Chamar recursivamente o solver.
+     - Se a chamada recursiva resolver o tabuleiro, retornar sucesso.
+     - Caso contrário, desfazer a jogada e tentar o próximo valor.
+  4. Se nenhum candidato funcionar, sinalizar falha para forçar o backtrack.
+
+- **Propriedades:**
+  - **Completo:** encontra solução se existir.
+  - **Potencialmente lento** para Sudokus difíceis sem heurísticas.
+
+---
+
+## 2. Heurísticas sobre o backtracking (MRV e LCV)
+
+As heurísticas não mudam o que é solução, apenas **como** a árvore de busca é explorada.
+
+### 2.1 MRV (Minimum Remaining Values) — “falhar primeiro”
+
+- **O que faz:**
+  Escolhe sempre a célula vazia com **menos candidatos válidos**.
+
+- **Motivação:**
+  - Atacar cedo os **gargalos** do problema.
+  - Se uma célula tiver 0 candidatos, a ramificação morre rápido.
+  - Se tiver 1 candidato, a decisão é praticamente forçada.
+
+- **Efeito:**
+  - Reduz o tamanho efetivo da árvore de busca.
+  - Diminui o número de chamadas recursivas em muitos casos.
+
+- **No projeto:**
+  MRV é a estratégia de **escolha de variável**:
+  > próxima variável = célula vazia com menor número de candidatos.
+
+---
+
+### 2.2 LCV (Least Constraining Value) — “deixar portas abertas”
+
+Se MRV escolhe **qual célula** decidir, LCV define **em que ordem testar os valores** dessa célula.
+
+- **O que faz:**
+  Ordena os candidatos para uma célula de modo que o solver teste primeiro
+  o valor que **menos restringe** os vizinhos (linha, coluna e box).
+
+- **Motivação:**
+  - Evitar decisões que “estrangulem” o resto do tabuleiro, eliminando muitos candidatos de outras células.
+
+- **Como funciona (conceitualmente):**
+  1. Para cada candidato `v`:
+     - Estima o impacto de colocar `v` na célula (quantos candidatos some dos vizinhos).
+  2. Ordena os candidatos do menor impacto para o maior.
+  3. O backtracking segue essa ordem “mais amigável”.
+
+- **Efeito:**
+  - Não altera o conjunto de soluções, apenas a **ordem de exploração**.
+  - Em média, reduz a quantidade de backtracking.
+
+- **No projeto:**
+  LCV é a estratégia de **ordenar os valores**:
+  > MRV escolhe a célula, LCV define a ordem dos candidatos.
+
+---
+
+## 3. Combinação: Backtracking + MRV + LCV
+
+Na prática, o solver baseado em backtracking funciona assim:
+
+1. **Escolha da variável:** MRV
+2. **Escolha da ordem dos valores:** LCV
+3. **Mecanismo de busca:** backtracking recursivo clássico.
+
+Isso mantém a **correção** do backtracking (se existe solução, ela será encontrada) e permite estudar:
+
+- Impacto de heurísticas de **escolha de variável**.
+- Impacto de heurísticas de **ordenação de valores**.
+- Diferenças de desempenho para o mesmo conjunto de instâncias.
+
+---
+
+## 4. DLX (Algorithm X com Dancing Links)
+
+DLX é uma implementação eficiente do **Algorithm X**, proposto por Donald Knuth,
+para resolver problemas de **exact cover**.
+
+### 4.1 Sudoku como *exact cover*
+
+A ideia é mapear o Sudoku para uma matriz binária onde:
+
+- Cada **linha** da matriz representa uma possível colocação `(linha, coluna, valor)`.
+- Cada **coluna** representa uma restrição que deve ser satisfeita exatamente uma vez.
+
+Típicas colunas de restrição para Sudoku:
+
+1. **Célula ocupada:**
+   Cada célula (linha, coluna) deve receber exatamente um valor.
+2. **Linha–valor:**
+   Para cada linha e cada dígito, aquele dígito aparece exatamente uma vez na linha.
+3. **Coluna–valor:**
+   Idem para colunas.
+4. **Box–valor (subgrade 3x3):**
+   Cada dígito aparece exatamente uma vez em cada subgrade.
+
+Uma solução do Sudoku corresponde a um **conjunto de linhas** da matriz
+que cobre todas as colunas (todas as restrições) **uma única vez**.
+
+### 4.2 Algorithm X + Dancing Links
+
+- **Algorithm X:**
+  É um algoritmo de backtracking genérico sobre a matriz de exact cover.
+- **Dancing Links (DLX):**
+  É uma estrutura de dados baseada em listas duplamente ligadas que permite:
+  - “Cobrir” e “descobrir” colunas/linhas de forma muito eficiente.
+  - Reverter operações de forma barata na recursão.
+
+### 4.3 Propriedades no contexto do projeto
+
+- **Exato:** assim como o backtracking, encontra soluções corretas.
+- **Geral:** o motor DLX não “sabe” nada de Sudoku; recebe só a matriz de exato cover.
+- **Didático:**
+  - Mostra como problemas de puzzle podem ser transformados em outra classe de problema (exact cover).
+  - Permite comparar:
+    - backtracking diretamente no tabuleiro
+    - vs backtracking sobre a representação matricial (DLX).
+
+---
+
+## 5. CP-SAT (Programação por Restrições + SAT)
+
+CP-SAT é uma abordagem onde o Sudoku é modelado como um **modelo matemático declarativo**
+e entregue a um solver de **programação por restrições/inteiros**.
+
+### 5.1 Modelagem típica para Sudoku
+
+- **Variáveis:**
+  - `x[r, c] ∈ {1..9}` para cada linha `r` e coluna `c`.
+
+- **Restrições:**
+  1. **Respeitar as pistas:**
+     - Se a entrada já tem um valor em `(r, c)`, então `x[r, c]` é fixado nesse valor.
+  2. **Linhas:**
+     - Todos os valores de uma linha são diferentes (`AllDifferent`).
+  3. **Colunas:**
+     - Todos os valores de uma coluna são diferentes.
+  4. **Subgrades 3x3:**
+     - Todos os valores de cada bloco 3x3 são diferentes.
+
+Opcionalmente, é possível adicionar:
+
+- Restrições extras (por exemplo, garantir unicidade de solução).
+- Critérios de otimização (não usual para Sudoku, mas possível).
+
+### 5.2 Como o solver CP-SAT trabalha (visão de alto nível)
+
+- Traduz o modelo em uma combinação de:
+  - **Cláusulas SAT**,
+  - **Restrições inteiras**,
+  - Técnicas de propagação e *branch-and-bound*.
+- A partir daí, o solver executa:
+  - Propagação de restrições,
+  - Decisões sobre variáveis,
+  - Backtracking guiado por heurísticas internas.
+
+### 5.3 Propriedades no contexto do projeto
+
+- Você **não implementa o algoritmo de busca na mão**: só **declara o modelo**.
+- O mesmo solver CP-SAT serviria para:
+  - Sudoku,
+  - Escalonamento,
+  - Alocação de recursos,
+  - etc.
+- Didaticamente, permite comparar:
+  - **Abordagem “algorítmica” manual** (backtracking, DLX)
+  - vs **abordagem “modelagem + solver genérico”** (CP-SAT).
+
+---
+
+## 6. Comparando as abordagens
+
+Resumo das três famílias principais:
+
+| Abordagem         | Tipo              | Quem controla a busca?      | Vantagens didáticas                               |
+|-------------------|-------------------|-----------------------------|---------------------------------------------------|
+| Backtracking      | Exato, CSP direto | Código do projeto           | Simples, bom para ver recursão + heurísticas      |
+| Backtracking+MRV/LCV | Exato, CSP direto | Código do projeto        | Mostra impacto de heurísticas de busca            |
+| DLX (Algorithm X) | Exato, *exact cover* | Código do projeto        | Ilustra transformação para outra estrutura (matriz) |
+| CP-SAT            | Exato (em tese)   | Solver de terceiros (CP-SAT)| Enfatiza modelagem e uso de solver genérico       |
+
+```
