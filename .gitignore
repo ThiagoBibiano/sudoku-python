@@ -22,3 +22,4 @@ venv/
 .DS_Store
 Thumbs.db
 
+data/rl_data/sudoku.csv
