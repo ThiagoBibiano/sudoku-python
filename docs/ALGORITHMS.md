@@ -1,7 +1,3 @@
-Perfeito, vamos incluir DLX e CP-SAT na mesma pegada didática.
-Segue uma versão completa de `docs/ALGORITHMS.md` já atualizada:
-
-```md
 # Algoritmos de Resolução (visão técnica)
 
 A aplicação trata o Sudoku como um **Problema de Satisfação de Restrições (CSP)**:
@@ -273,4 +269,3 @@ Resumo das abordagens principais:
 | Simulated Annealing | Heurístico (otimização) | Código do projeto    | Visualiza curva de custo, aceita piores soluções no começo |
 | Algoritmo Genético  | Heurístico (otimização) | Código do projeto    | Compara paradigmas populacionais (crossover/mutação) |
 
-```
