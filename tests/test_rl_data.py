@@ -71,3 +71,25 @@ def test_csv_dataset_streaming_and_dataloader():
     assert batch["obs"].shape == (2, 9, 9, 10)
     assert batch["target"].shape == (2, 9, 9)
     Path(csv_path).unlink(missing_ok=True)
+
+
+def test_dataset_respects_start_row():
+    # Cria dois registros distintos para verificar o offset
+    header = "puzzle,solution\n"
+    puzzle_a = "100000000" + "0" * 72  # célula (0,0)=1
+    solution_a = "1" * 81
+    puzzle_b = "900000000" + "0" * 72  # célula (0,0)=9
+    solution_b = "9" * 81
+
+    with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
+        tmp.write(header)
+        tmp.write(f"{puzzle_a},{solution_a}\n")  # row 0
+        tmp.write(f"{puzzle_b},{solution_b}\n")  # row 1
+        csv_path = tmp.name
+
+    dataset = SudokuCSVDataset(csv_path, start_row=1, max_rows=1)
+    rows = list(dataset)
+    assert len(rows) == 1
+    # Deve ler apenas o segundo registro (com dígito 9 na primeira célula)
+    assert rows[0]["target"][0, 0].item() == 9
+    Path(csv_path).unlink(missing_ok=True)
