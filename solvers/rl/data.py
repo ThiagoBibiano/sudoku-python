@@ -80,12 +80,14 @@ class SudokuCSVDataset(IterableDataset):  # type: ignore[misc]
         *,
         n: int = 3,
         max_rows: Optional[int] = None,
+        start_row: int = 0,
     ) -> None:
         _require_torch()
         self.csv_path = Path(csv_path)
         self.n = n
         self.size = n * n
         self.max_rows = max_rows
+        self.start_row = max(0, int(start_row))
         if not self.csv_path.exists():
             raise FileNotFoundError(f"CSV não encontrado: {self.csv_path}")
 
@@ -93,18 +95,23 @@ class SudokuCSVDataset(IterableDataset):  # type: ignore[misc]
         worker = get_worker_info() if get_worker_info else None
         worker_id = worker.id if worker else 0
         num_workers = worker.num_workers if worker else 1
+        read_count = 0
 
         def row_iter() -> Iterator[Tuple[str, str]]:
+            nonlocal read_count
             with self.csv_path.open("r", newline="") as f:
                 reader = csv.reader(f)
                 next(reader, None)  # header
                 for idx, row in enumerate(reader):
-                    if self.max_rows is not None and idx >= self.max_rows:
+                    if idx < self.start_row:
+                        continue
+                    if self.max_rows is not None and read_count >= self.max_rows:
                         break
                     if (idx - worker_id) % num_workers != 0:
                         continue
                     if len(row) < 2:
                         continue
+                    read_count += 1
                     yield row[0], row[1]
 
         for puzzle_str, solution_str in row_iter():
@@ -122,11 +129,12 @@ def build_dataloader(
     batch_size: int = 32,
     num_workers: int = 0,
     max_rows: Optional[int] = None,
+    start_row: int = 0,
     n: int = 3,
 ) -> DataLoader:
     """Cria DataLoader com streaming (sem carregar 9M em RAM)."""
     _require_torch()
-    dataset = SudokuCSVDataset(csv_path, n=n, max_rows=max_rows)
+    dataset = SudokuCSVDataset(csv_path, n=n, max_rows=max_rows, start_row=start_row)
     return DataLoader(
         dataset,
         batch_size=batch_size,
