@@ -15,6 +15,7 @@ from .data import (
     givens_mask,
     puzzle_str_to_grid,
 )
+from .policy import SudokuMaskablePolicy, SudokuFeatureExtractor
 
 __all__ = [
     "RewardConfig",
@@ -29,4 +30,6 @@ __all__ = [
     "FlattenSudokuActionSpace",
     "sudoku_action_mask",
     "SudokuVisualizationCallback",
+    "SudokuMaskablePolicy",
+    "SudokuFeatureExtractor",
 ]

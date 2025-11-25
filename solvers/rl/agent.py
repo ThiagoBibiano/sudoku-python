@@ -58,6 +58,7 @@ class SudokuNet(nn.Module):  # type: ignore[misc]
     ) -> None:
         _require_torch()
         super().__init__()
+        self.hidden_dim = hidden_dim
         self.input_conv = nn.Sequential(
             nn.Conv2d(10, hidden_dim, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(hidden_dim),
@@ -69,12 +70,17 @@ class SudokuNet(nn.Module):  # type: ignore[misc]
         self.dropout_final = nn.Dropout2d(p=dropout_rate)
         self.output_conv = nn.Conv2d(hidden_dim, 9, kernel_size=1)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":  # noqa: D401
-        # Espera entrada (B, 9, 9, 10); converte para formato de conv2d
+    def forward_features(self, x: "torch.Tensor") -> "torch.Tensor":
+        """Retorna apenas o corpo convolucional (B, hidden, 9, 9)."""
         x = x.permute(0, 3, 1, 2)
         x = self.input_conv(x)
         for block in self.res_blocks:
             x = block(x)
+        return x
+
+    def forward(self, x: "torch.Tensor") -> "torch.Tensor":  # noqa: D401
+        # Espera entrada (B, 9, 9, 10); converte para formato de conv2d
+        x = self.forward_features(x)
         x = self.dropout_final(x)
         logits = self.output_conv(x)  # (B, 9, 9, 9) após permutar
         return logits.permute(0, 2, 3, 1)

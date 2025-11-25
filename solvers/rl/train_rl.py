@@ -5,9 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-from functools import partial
-
-import numpy as np
 
 from core.board import Board
 from solvers.rl.env import (
@@ -15,15 +12,13 @@ from solvers.rl.env import (
     SudokuGymEnv,
     sudoku_action_mask,
 )
-from solvers.rl.agent import SudokuNet
 from solvers.rl.callbacks import SudokuVisualizationCallback
 from solvers.rl.data import puzzle_str_to_grid
+from solvers.rl.policy import SudokuMaskablePolicy
 
 try:
     import torch
     from stable_baselines3.common.vec_env import DummyVecEnv
-    from stable_baselines3.common.env_util import make_vec_env
-    from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
     from sb3_contrib.ppo_mask import MaskablePPO
     from sb3_contrib.common.wrappers import ActionMasker
 except ImportError as exc:  # pragma: no cover - só avalia quando deps faltam
@@ -31,18 +26,6 @@ except ImportError as exc:  # pragma: no cover - só avalia quando deps faltam
         "Treino RL requer torch, stable-baselines3 e sb3-contrib instalados. "
         f"Erro original: {exc}"
     )
-
-
-class SudokuFeatureExtractor(BaseFeaturesExtractor):
-    """Usa SudokuNet como extrator de features (flatten logits)."""
-
-    def __init__(self, observation_space, dropout_rate: float = 0.0) -> None:
-        super().__init__(observation_space, features_dim=9 * 9 * 9)
-        self.net = SudokuNet(dropout_rate=dropout_rate)
-
-    def forward(self, obs: torch.Tensor) -> torch.Tensor:  # type: ignore[override]
-        logits = self.net(obs)
-        return torch.flatten(logits, start_dim=1)
 
 
 def load_board_from_csv(csv_path: str | Path, start_row: int = 0) -> Board:
@@ -102,20 +85,13 @@ def main() -> None:
     ]
     vec_env = DummyVecEnv(env_fns)
 
-    policy_kwargs = dict(
-        features_extractor_class=SudokuFeatureExtractor,
-        features_extractor_kwargs={"dropout_rate": args.dropout_rate},
-        net_arch=[256, 256],
-    )
-
     model = MaskablePPO(
-        "MlpPolicy",
+        SudokuMaskablePolicy,
         vec_env,
         learning_rate=args.learning_rate,
         ent_coef=args.ent_coef,
         gamma=args.gamma,
         tensorboard_log=args.log_dir,
-        policy_kwargs=policy_kwargs,
     )
 
     # Carrega pesos supervisionados na feature extractor (SudokuNet)
