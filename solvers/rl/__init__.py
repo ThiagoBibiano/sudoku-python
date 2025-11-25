@@ -15,6 +15,7 @@ from .data import (
     givens_mask,
     puzzle_str_to_grid,
 )
+from .inference import load_ai_model, board_to_observation, get_ai_probabilities, get_ai_hint
 from .policy import SudokuMaskablePolicy, SudokuFeatureExtractor
 
 __all__ = [
@@ -32,4 +33,8 @@ __all__ = [
     "SudokuVisualizationCallback",
     "SudokuMaskablePolicy",
     "SudokuFeatureExtractor",
+    "load_ai_model",
+    "board_to_observation",
+    "get_ai_probabilities",
+    "get_ai_hint",
 ]
