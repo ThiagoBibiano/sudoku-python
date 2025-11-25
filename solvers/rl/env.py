@@ -130,6 +130,10 @@ class SudokuGymEnv(gym.Env if gym is not None else object):
         """Retorna o tabuleiro como string (modo 'ansi')."""
         return str(self._board)
 
+    def action_mask(self) -> np.ndarray:
+        """Exposição pública da máscara de ação (para wrappers de RL)."""
+        return self._compute_action_mask()
+
     # ------------------------------------------------------------------ #
     # Internos
     # ------------------------------------------------------------------ #
@@ -197,3 +201,33 @@ class SudokuGymEnv(gym.Env if gym is not None else object):
             )
         r, c, v_idx = (int(action[0]), int(action[1]), int(action[2]))
         return r, c, v_idx
+
+
+def sudoku_action_mask(env: "SudokuGymEnv") -> np.ndarray:
+    """Função auxiliar compatível com ActionMasker (SB3-contrib)."""
+    return env.action_mask().reshape(-1)
+
+
+class FlattenSudokuActionSpace(gym.ActionWrapper if gym is not None else object):
+    """Wrapper que converte ações (r, c, v) para Discrete(flat)."""
+
+    def __init__(self, env: SudokuGymEnv) -> None:
+        if gym is None:
+            raise ImportError(
+                "gymnasium é obrigatório para usar FlattenSudokuActionSpace "
+                f"(erro original: {_GYM_IMPORT_ERROR})"
+            )
+        super().__init__(env)
+        size = env.action_space.nvec[0]  # type: ignore[attr-defined]
+        self.size = int(size)
+        self.action_space = spaces.Discrete(self.size * self.size * self.size)
+
+    def action(self, action: int) -> Action:
+        v_idx = int(action % self.size)
+        c = int((action // self.size) % self.size)
+        r = int(action // (self.size * self.size))
+        return r, c, v_idx
+
+    def action_mask(self) -> np.ndarray:
+        mask = self.env.action_mask()
+        return mask.reshape(-1)

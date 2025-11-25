@@ -1,7 +1,13 @@
 """Camada de RL (Reinforcement Learning) para Sudoku."""
 
-from .env import RewardConfig, SudokuGymEnv
+from .env import (
+    RewardConfig,
+    SudokuGymEnv,
+    FlattenSudokuActionSpace,
+    sudoku_action_mask,
+)
 from .agent import SudokuNet, ResidualBlock
+from .callbacks import SudokuVisualizationCallback
 from .data import (
     SudokuCSVDataset,
     build_dataloader,
@@ -20,4 +26,7 @@ __all__ = [
     "puzzle_str_to_grid",
     "SudokuNet",
     "ResidualBlock",
+    "FlattenSudokuActionSpace",
+    "sudoku_action_mask",
+    "SudokuVisualizationCallback",
 ]
