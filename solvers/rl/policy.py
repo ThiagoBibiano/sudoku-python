@@ -38,10 +38,10 @@ class SudokuFeatureExtractor(BaseFeaturesExtractor):  # type: ignore[misc]
         board_size = int(obs_shape[0])
         self.board_size = board_size
         self.hidden_dim = hidden_dim
-        self.net = SudokuNet(hidden_dim=self.hidden_dim, dropout_rate=dropout_rate)
         # features_dim informado ao SB3 é flatten do mapa convolucional
         self._features_dim = self.hidden_dim * board_size * board_size
         super().__init__(observation_space, features_dim=self._features_dim)
+        self.net = SudokuNet(hidden_dim=self.hidden_dim, dropout_rate=dropout_rate)
 
     @property
     def features_dim(self) -> int:  # type: ignore[override]
@@ -88,6 +88,14 @@ class SudokuHeads(nn.Module):  # type: ignore[misc]
         gap = fmap.mean(dim=(2, 3))  # (B, hidden)
         latent_vf = self.vf_head(gap)  # (B, 1)
         return latent_pi, latent_vf
+
+    def forward_actor(self, features: torch.Tensor) -> torch.Tensor:
+        latent_pi, _ = self.forward(features)
+        return latent_pi
+
+    def forward_critic(self, features: torch.Tensor) -> torch.Tensor:
+        _, latent_vf = self.forward(features)
+        return latent_vf
 
 
 class SudokuMaskablePolicy(MaskableActorCriticPolicy):  # type: ignore[misc]

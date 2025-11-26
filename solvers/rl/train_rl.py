@@ -92,6 +92,7 @@ def main() -> None:
         ent_coef=args.ent_coef,
         gamma=args.gamma,
         tensorboard_log=args.log_dir,
+        verbose=1,
     )
 
     # Carrega pesos supervisionados na feature extractor (SudokuNet)

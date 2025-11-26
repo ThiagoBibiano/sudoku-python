@@ -132,7 +132,11 @@ class SudokuGymEnv(gym.Env if gym is not None else object):
 
     def action_mask(self) -> np.ndarray:
         """Exposição pública da máscara de ação (para wrappers de RL)."""
-        return self._compute_action_mask()
+        mask = self._compute_action_mask()
+        mask = mask.astype(np.bool_)
+        if not mask.any():
+            mask[:] = True  # evita mascarar tudo (compatibilidade com MaskablePPO)
+        return mask
 
     # ------------------------------------------------------------------ #
     # Internos
@@ -230,4 +234,7 @@ class FlattenSudokuActionSpace(gym.ActionWrapper if gym is not None else object)
 
     def action_mask(self) -> np.ndarray:
         mask = self.env.action_mask()
-        return mask.reshape(-1)
+        mask = mask.reshape(-1).astype(np.bool_)
+        if not mask.any():
+            mask[:] = True
+        return mask
