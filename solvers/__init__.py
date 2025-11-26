@@ -10,6 +10,10 @@ try:
     from .cp_sat import CpSatSolver
 except ImportError:  # ortools pode não estar instalado
     CpSatSolver = None  # type: ignore[assignment]
+try:
+    from .rl.wrapper import NeuralSolver
+except ImportError:  # torch pode não estar instalado
+    NeuralSolver = None  # type: ignore[assignment]
 from .dlx_solver import DlxSolver
 from .registry import register
 
@@ -21,6 +25,8 @@ register("simulated_annealing", SimulatedAnnealingSolver)
 if CpSatSolver is not None:
     register("cp_sat", CpSatSolver)
 register("dlx", DlxSolver)
+if NeuralSolver is not None:
+    register("neural_supervised", NeuralSolver)
 
 
 __all__ = [
@@ -31,4 +37,5 @@ __all__ = [
     "SimulatedAnnealingSolver",
     "CpSatSolver",
     "DlxSolver",
+    "NeuralSolver",
 ]
