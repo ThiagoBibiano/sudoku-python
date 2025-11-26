@@ -16,9 +16,9 @@ O projeto serve tanto como **engine de Sudoku** quanto como um **playground de a
   - Backtracking
   - DLX (Dancing Links)
   - Modelagem para solvers de Programação por Restrições / CP-SAT
-- ⏳ Permitir **extensibilidade para heurísticas e IA**:
-  - Meta-heurísticas
-  - Redes neurais / modelos de ML
+- ✅ Permitir **extensibilidade para heurísticas e IA**:
+  - Meta-heurísticas (ex.: Simulated Annealing e Algoritmo Genético)
+  - Redes neurais / modelos de ML (a explorar)
 - ⏳ Criar um **benchmark comparativo** entre diferentes abordagens de solução.
 
 ---
@@ -98,8 +98,8 @@ O objetivo é que o app permita:
 * Mostrar o tabuleiro de Sudoku de forma amigável.
 * Servir de base para:
 
-  * Experimentar diferentes solvers;
-  * Comparar tempo de solução e qualidade das abordagens;
+  * Experimentar diferentes solvers (clássicos, DLX e meta-heurísticos);
+  * Comparar tempo de solução, qualidade das abordagens e evolução de custo;
   * Criar interfaces de apoio ao estudo de algoritmos.
 
 À medida que novas funcionalidades forem implementadas (solvers, heurísticas, IA etc.), elas serão expostas via UI do Streamlit.
@@ -146,6 +146,29 @@ Alguns passos planejados para o futuro do projeto:
 
   * Heurísticas de escolha de célula/valor;
   * Rede neural para sugerir jogadas ou inicializar soluções.
+
+---
+
+## ♨️ Meta-heurísticas
+
+O projeto agora inclui uma camada para **solvers meta-heurísticos** com foco didático. Os principais pontos:
+
+* **Infraestrutura comum**: `solvers/metaheuristics/base_meta.py` padroniza configuração, custo e coleta de histórico.
+* **Simulated Annealing (SA)**: disponível em `solvers/metaheuristics/sa.py`, usa custo baseado em conflitos de colunas e subgrades.
+* **Algoritmo Genético (AG)**: implementado em `solvers/metaheuristics/ga.py`, com crossover por linhas, mutação via troca e elitismo opcional.
+* **Integração com Streamlit**: os meta-solvers seguem a interface geral de `solvers/`, permitindo seleção e visualização no app.
+* **Testes**: a suíte `tests/test_metaheuristics.py` garante reprodutibilidade e rastreamento do histórico de custo.
+
+### Como usar no Streamlit
+
+1. Inicie o app com `streamlit run app.py` e acesse a página de solvers meta-heurísticos.
+2. Escolha o solver desejado (SA ou GA) no seletor de solvers.
+3. Ajuste hiperparâmetros via sliders:
+   * **SA**: temperatura inicial (`T0`), `alpha`, número máximo de iterações.
+   * **GA**: tamanho da população (`pop_size`), número de gerações (`n_generations`), probabilidade de crossover/mutação, tamanho do torneio e elitismo.
+4. Execute o solver para visualizar o tabuleiro resultante e o **histórico de custo** por iteração/geração.
+
+> Dica: defina uma **seed** na configuração do solver para repetir experimentos e comparar curvas de custo entre execuções.
 
 ---
 
